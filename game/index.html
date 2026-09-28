@@ -1,5 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fly Pong</title>
 <meta name="description" content="Play Pong against 1,370 spiking neurons from the FlyWire fruit-fly connectome, and train it with dopamine.">
+<meta property="og:title" content="Fly Pong">
+<meta property="og:description" content="Play Pong against 1,370 spiking neurons wired exactly as in a real fruit-fly brain, and train it with dopamine.">
+<meta name="theme-color" content="#eef1ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1310" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230a0f0c'/%3E%3Ccircle cx='8' cy='5' r='2' fill='%23a6ff6e'/%3E%3Crect x='3' y='11' width='10' height='2' rx='1' fill='%23a6ff6e'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@600;900&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap">
@@ -83,12 +93,17 @@
 }
 
 * { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html, body { background: var(--paper); }
-body { color: var(--ink); font-family: var(--f-prose); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+body { margin: 0; color: var(--ink); font-family: var(--f-prose); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+[hidden] { display: none !important; }
+button, input, label, .pad { -webkit-tap-highlight-color: transparent; }
+button, label, input[type="range"] { touch-action: manipulation; }
 a { color: var(--accent); text-underline-offset: 2px; }
 button, input, select { font: inherit; }
 
-.page { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 72px; display: grid; gap: 36px; }
+.page { max-width: 1180px; margin: 0 auto; padding-inline: max(20px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-right, 0px)); padding-block: max(28px, env(safe-area-inset-top, 0px)) max(72px, env(safe-area-inset-bottom, 0px)); display: grid; gap: 36px; }
+@media (max-width: 560px) { .page { padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); padding-block: max(16px, env(safe-area-inset-top, 0px)) max(48px, env(safe-area-inset-bottom, 0px)); gap: 28px; } }
 
 /* ---------- masthead ---------- */
 .masthead { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 32px; align-items: end; }
@@ -97,10 +112,21 @@ button, input, select { font: inherit; }
 .lede { margin: 0; max-width: 62ch; font-size: 19px; line-height: 1.45; text-wrap: pretty; }
 .specline { grid-column: 1 / -1; margin: 6px 0 0; font-family: var(--f-mono); font-size: 12px; letter-spacing: .04em; color: var(--ink-3); border-top: 1px solid var(--rule); padding-top: 10px; font-variant-numeric: tabular-nums; }
 @media (max-width: 760px) { .masthead { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) {
+  .wordmark { font-size: 46px; line-height: .9; }
+  .wordmark br { display: none; }
+  .lede { font-size: 16px; line-height: 1.45; }
+  .specline { font-size: 11px; }
+}
 
 /* ---------- bench ---------- */
 .bench { display: grid; grid-template-columns: minmax(280px, 420px) minmax(0, 1fr); gap: 24px; align-items: start; }
 @media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } .arena-col { width: 100%; max-width: 440px; justify-self: center; } }
+/* keep the whole arena, score and controls inside one screen: width follows the viewport height */
+:root { --arena-chrome: 150px; }
+@media (pointer: coarse) { :root { --arena-chrome: 214px; } }
+.arena-col { max-width: min(440px, max(250px, calc((100vh - var(--arena-chrome)) / 1.4 + 22px))); }
+@supports (height: 100svh) { .arena-col { max-width: min(440px, max(250px, calc((100svh - var(--arena-chrome)) / 1.4 + 22px))); } }
 
 .label { font-family: var(--f-mono); font-size: 11px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
 .screen { background: var(--screen); border: 1px solid var(--screen-rule); border-radius: 6px; color: var(--screen-ink); position: relative; }
@@ -113,7 +139,26 @@ button, input, select { font: inherit; }
 .scoreboard .digits { font-family: var(--f-display); font-weight: 900; font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); min-width: 2ch; text-align: center; }
 .scoreboard .colon { font-family: var(--f-display); font-size: 34px; color: var(--ink-3); }
 .arena-wrap { padding: 10px; }
-#arena { display: block; width: 100%; aspect-ratio: 1 / 1.4; max-width: 100%; border-radius: 3px; touch-action: none; cursor: ew-resize; }
+#arena { display: block; width: 100%; aspect-ratio: 1 / 1.4; max-width: 100%; border-radius: 3px; touch-action: pan-y; cursor: ew-resize; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#arena.playing { touch-action: none; }
+/* thumb pad under the arena on touch screens, so your finger never hides the game */
+.pad { display: none; position: relative; height: 54px; border-radius: 6px; background: var(--screen); border: 1px solid var(--screen-rule); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; overflow: hidden; }
+@media (pointer: coarse) { .pad { display: block; } }
+.touch .pad { display: block; }
+.pad span { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; color: var(--screen-ink-2); pointer-events: none; }
+.pad i { position: absolute; top: 9px; bottom: 9px; width: 18%; margin-left: -9%; left: 50%; border-radius: 4px; border: 1.5px solid var(--led-on); background: rgba(166, 255, 110, .16); pointer-events: none; }
+@media (pointer: coarse) {
+  .arena-col { gap: 8px; }
+  .scoreboard .digits { font-size: 34px; }
+  .scoreboard .colon { font-size: 26px; }
+  .pad { height: 50px; }
+}
+@media (max-width: 420px) {
+  .arena-caption { font-size: 10.5px; letter-spacing: .04em; }
+  .arena-caption #speedCaption.normal { display: none; }
+}
+.rotate-hint { display: none; margin: 0; font-family: var(--f-mono); font-size: 12px; color: var(--ink-3); text-align: center; }
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) { .rotate-hint { display: block; } }
 .arena-caption { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; font-family: var(--f-mono); font-size: 11px; letter-spacing: .06em; color: var(--screen-ink-2); }
 .hint { font-family: var(--f-mono); font-size: 12px; color: var(--ink-3); line-height: 1.5; margin: 0; }
 
@@ -164,6 +209,12 @@ button, input, select { font: inherit; }
 .btn.heat { color: var(--heat); border-color: color-mix(in srgb, var(--heat) 45%, var(--rule)); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (pointer: coarse) {
+  .btn, .seg button { min-height: 44px; font-size: 13.5px; padding-inline: 8px; }
+  .check { font-size: 13px; gap: 10px; }
+  .check input { width: 20px; height: 20px; margin-top: 0; }
+  input[type="range"] { height: 32px; }
+}
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 .row .btn { flex: 1 1 auto; }
 .slider { display: grid; gap: 4px; }
@@ -193,7 +244,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 #curve .bar { fill: var(--accent); }
 #curve .bar.naive { fill: var(--role-other); }
 #curve .hit { fill: transparent; }
-.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--paper); font-family: var(--f-mono); font-size: 11.5px; line-height: 1.4; padding: 6px 8px; border-radius: 4px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px)); z-index: 5; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--paper); font-family: var(--f-mono); font-size: 11.5px; line-height: 1.4; padding: 6px 8px; border-radius: 4px; width: max-content; max-width: min(330px, calc(100vw - 56px)); overflow-wrap: anywhere; transform: translate(-50%, calc(-100% - 10px)); z-index: 5; }
 .screen .tip { background: var(--screen-ink); color: var(--screen); }
 
 /* ---------- notes ---------- */
@@ -221,10 +272,12 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .sources .src { color: var(--ink-3); }
 @media (prefers-reduced-motion: reduce) { .turn-needle { transition: none; } }
 </style>
+</head>
+<body>
 
 <main class="page">
   <header class="masthead">
-    <h1 class="wordmark">FLY<br><span>PONG</span></h1>
+    <h1 class="wordmark">FLY <br><span>PONG</span></h1>
     <p class="lede">The bottom paddle belongs to 1,370 neurons from a real fruit-fly brain. The ball lights up the fly's object-detecting eye cells, the fly's own wiring turns that into steering commands, and the steering moves its paddle. Nothing about its play is scripted, and you can train it.</p>
     <p class="specline">FlyWire whole-brain connectome, release 783 &nbsp;·&nbsp; 1,370 of 138,639 neurons &nbsp;·&nbsp; 82,282 connections &nbsp;·&nbsp; spiking model after Shiu et al. 2024</p>
   </header>
@@ -240,13 +293,15 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       </div>
       <div class="screen arena-wrap">
         <canvas id="arena" aria-label="Pong arena. Your paddle is at the top, the fly's paddle at the bottom." role="img"></canvas>
-        <div class="arena-caption"><span id="modeCaption">FLY PRACTICES AGAINST A WALL</span><span id="speedCaption">1× REAL TIME</span></div>
+        <div class="arena-caption"><span id="modeCaption">THE FLY PRACTISES ON A WALL</span><span id="speedCaption" class="normal">1× REAL TIME</span></div>
       </div>
+      <div class="pad" id="pad" role="slider" aria-label="Your paddle position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="-1"><span id="padLabel">touch here to play</span><i id="padKnob"></i></div>
       <div class="seg" role="group" aria-label="Mode">
         <button id="modePlay" aria-pressed="false">You play</button>
-        <button id="modePractice" aria-pressed="true">Fly practices</button>
+        <button id="modePractice" aria-pressed="true">Fly practises</button>
       </div>
       <p class="hint" id="hint">Move the pointer or drag over the arena to steer your paddle. Arrow keys or A/D work too.</p>
+      <p class="rotate-hint">Turn your phone upright for a bigger arena.</p>
     </div>
 
     <div class="lab-col">
@@ -792,13 +847,13 @@ function drawArena(dtMs) {
     actx.globalAlpha = Math.min(1, 0.25 + l); actx.beginPath(); actx.arc(x, y, rad, 0, 7); actx.fill();
   }
   actx.globalAlpha = 1;
-  // fly marker under its paddle: a small wing glyph
-  const fx = state.fly.x / CFG.W * W, fy = (CFG.H - CFG.paddleY) / CFG.H * H + cellY * 1.6;
+  // fly marker under its paddle: a small body with two wings, kept inside the field
+  const fx = state.fly.x / CFG.W * W, fy = (CFG.H - CFG.paddleY) / CFG.H * H + cellY * 1.25;
   actx.fillStyle = "#a6ff6e"; actx.globalAlpha = 0.9;
-  actx.beginPath(); actx.ellipse(fx, fy, cellX * 0.45, cellY * 0.75, 0, 0, 7); actx.fill();
+  actx.beginPath(); actx.ellipse(fx, fy, cellX * 0.38, cellY * 0.55, 0, 0, 7); actx.fill();
   actx.globalAlpha = 0.45;
-  actx.beginPath(); actx.ellipse(fx - cellX * 0.9, fy + cellY * 0.2, cellX * 0.8, cellY * 0.38, -0.5, 0, 7); actx.fill();
-  actx.beginPath(); actx.ellipse(fx + cellX * 0.9, fy + cellY * 0.2, cellX * 0.8, cellY * 0.38, 0.5, 0, 7); actx.fill();
+  actx.beginPath(); actx.ellipse(fx - cellX * 0.8, fy + cellY * 0.1, cellX * 0.7, cellY * 0.3, -0.5, 0, 7); actx.fill();
+  actx.beginPath(); actx.ellipse(fx + cellX * 0.8, fy + cellY * 0.1, cellX * 0.7, cellY * 0.3, 0.5, 0, 7); actx.fill();
   actx.globalAlpha = 1;
 }
 
@@ -833,40 +888,49 @@ function sizeBrain() {
   }
   og.putImageData(img, 0, 0);
   silCanvas = off;
+  // the resting brain (silhouette, every neuron at rest, labels) is drawn once per resize
+  const rest = document.createElement("canvas"); rest.width = brainC.width; rest.height = brainC.height;
+  const rg = rest.getContext("2d");
+  rg.fillStyle = "#070b09"; rg.fillRect(0, 0, rest.width, rest.height);
+  rg.imageSmoothingEnabled = true;
+  rg.drawImage(silCanvas, 0, 0, rest.width, rest.height);
+  for (const role of ["other", "dn", "lc10a", "aotu", "steer"]) {
+    const st = roleStyle[role];
+    rg.fillStyle = st.c; rg.globalAlpha = st.base; rg.beginPath();
+    for (let i = 0; i < DATA.n; i++) {
+      if (ROLE[i] !== role) continue;
+      const x = bx(NEU.x[i]), y = by(NEU.y[i]), rr = st.r * dpr;
+      rg.moveTo(x + rr, y); rg.arc(x, y, rr, 0, 7);
+    }
+    rg.fill();
+  }
+  rg.globalAlpha = 1;
+  const small = r.width < 420;
+  rg.font = `${(small ? 10 : 11) * dpr}px "IBM Plex Mono", ui-monospace, monospace`;
+  rg.textAlign = "center"; rg.fillStyle = "#8a988f";
+  for (const l of labelSpots) rg.fillText(small ? l.s : l.t, bx(l.p[0]), by(l.p[1]) + l.dy * dpr * (small ? 0.8 : 1));
+  brainRest = rest;
 }
+let brainRest = null;
 function bx(x) { return (x - SIL.x0) * brainScale.sx; }
 function by(y) { return (y - SIL.y0) * brainScale.sy; }
 const labelSpots = (() => {
   const pick = (f) => { let sx = 0, sy = 0, n = 0; for (let i = 0; i < DATA.n; i++) if (f(i)) { sx += NEU.x[i]; sy += NEU.y[i]; n++; } return [sx / n, sy / n]; };
   return [
-    { t: "LC10a · left eye", p: pick((i) => ROLE[i] === "lc10a" && NEU.side[i] === "left"), dy: 30 },
-    { t: "LC10a · right eye", p: pick((i) => ROLE[i] === "lc10a" && NEU.side[i] === "right"), dy: 30 },
-    { t: "DNa02", p: [NEU.x[S.DNa02_L], NEU.y[S.DNa02_L]], dy: -14 },
-    { t: "DNa02", p: [NEU.x[S.DNa02_R], NEU.y[S.DNa02_R]], dy: -14 },
+    { t: "LC10a · left eye", s: "left eye", p: pick((i) => ROLE[i] === "lc10a" && NEU.side[i] === "left"), dy: 30 },
+    { t: "LC10a · right eye", s: "right eye", p: pick((i) => ROLE[i] === "lc10a" && NEU.side[i] === "right"), dy: 30 },
+    { t: "DNa02", s: "DNa02", p: [NEU.x[S.DNa02_L], NEU.y[S.DNa02_L]], dy: -14 },
+    { t: "DNa02", s: "DNa02", p: [NEU.x[S.DNa02_R], NEU.y[S.DNa02_R]], dy: -14 },
   ];
 })();
 function drawBrain(dtMs) {
-  if (!brainScale) return;
-  const W = brainC.width, H = brainC.height, dpr = brainScale.dpr;
+  if (!brainScale || !brainRest) return;
+  const dpr = brainScale.dpr;
   const dec = Math.exp(-dtMs / 90), viz = state.vizCounts;
   let firing = 0;
   for (let i = 0; i < DATA.n; i++) { trace[i] = trace[i] * dec + viz[i] * 0.55; viz[i] = 0; if (trace[i] > 0.25) firing++; }
-  bctx.fillStyle = "#070b09"; bctx.fillRect(0, 0, W, H);
-  bctx.imageSmoothingEnabled = true;
-  bctx.drawImage(silCanvas, 0, 0, W, H);
-  // resting dots
-  for (const role of ["other", "dn", "lc10a", "aotu", "steer"]) {
-    const st = roleStyle[role];
-    bctx.fillStyle = st.c;
-    bctx.globalAlpha = st.base;
-    bctx.beginPath();
-    for (let i = 0; i < DATA.n; i++) {
-      if (ROLE[i] !== role) continue;
-      const x = bx(NEU.x[i]), y = by(NEU.y[i]), r = st.r * dpr;
-      bctx.moveTo(x + r, y); bctx.arc(x, y, r, 0, 7);
-    }
-    bctx.fill();
-  }
+  bctx.globalAlpha = 1;
+  bctx.drawImage(brainRest, 0, 0);
   // active dots
   for (let i = 0; i < DATA.n; i++) {
     const tr = trace[i];
@@ -880,29 +944,37 @@ function drawBrain(dtMs) {
     bctx.beginPath(); bctx.arc(x, y, (st.r + 0.6) * dpr, 0, 7); bctx.fill();
   }
   bctx.globalAlpha = 1;
-  // labels
-  bctx.font = `${11 * dpr}px "IBM Plex Mono", ui-monospace, monospace`;
-  bctx.textAlign = "center"; bctx.fillStyle = "#8a988f";
-  for (const l of labelSpots) bctx.fillText(l.t, bx(l.p[0]), by(l.p[1]) + l.dy * dpr);
   $("brainStatus").textContent = `${firing} of ${DATA.n.toLocaleString()} neurons firing`;
 }
-brainC.addEventListener("pointermove", (ev) => {
+// tooltips: hover with a mouse, tap on a touch screen; kept inside their panel
+const tipTimers = new Map();
+function placeTip(tip, wrapEl, clientX, clientY, html, touch) {
+  tip.innerHTML = html;
+  tip.hidden = false;
+  const wrap = wrapEl.getBoundingClientRect(), w = tip.offsetWidth;
+  tip.style.left = clamp(clientX - wrap.left, w / 2 + 4, Math.max(w / 2 + 4, wrap.width - w / 2 - 4)) + "px";
+  tip.style.top = (clientY - wrap.top) + "px";
+  clearTimeout(tipTimers.get(tip));
+  if (touch) tipTimers.set(tip, setTimeout(() => { tip.hidden = true; }, 3000));
+}
+function brainTip(ev) {
+  const touch = ev.pointerType !== "mouse";
   const r = brainC.getBoundingClientRect(), dpr = brainScale.dpr;
   const mx = (ev.clientX - r.left) * dpr, my = (ev.clientY - r.top) * dpr;
-  let best = -1, bd = (9 * dpr) ** 2;
+  let best = -1, bd = ((touch ? 18 : 9) * dpr) ** 2;
   for (let i = 0; i < DATA.n; i++) {
     const d = (bx(NEU.x[i]) - mx) ** 2 + (by(NEU.y[i]) - my) ** 2;
     if (d < bd) { bd = d; best = i; }
   }
   const tip = $("brainTip");
-  if (best < 0) { tip.hidden = true; return; }
+  if (best < 0) { if (!touch) tip.hidden = true; return; }
   const kind = { lc10a: "eye neuron", aotu: "pursuit relay", steer: "steering neuron", dn: "descending neuron", other: NEU.cls[best] + " neuron" }[ROLE[best]];
-  tip.innerHTML = `<b>${NEU.type[best]}</b> · ${NEU.side[best]} · ${kind}<br>${NEU.nt[best]} · FlyWire ${NEU.root_id[best]}`;
-  const wrap = brainC.parentElement.getBoundingClientRect();
-  tip.style.left = (ev.clientX - wrap.left) + "px"; tip.style.top = (ev.clientY - wrap.top) + "px";
-  tip.hidden = false;
-});
-brainC.addEventListener("pointerleave", () => { $("brainTip").hidden = true; });
+  placeTip(tip, brainC.parentElement, ev.clientX, ev.clientY,
+    `<b>${NEU.type[best]}</b> · ${NEU.side[best]} · ${kind}<br>${NEU.nt[best]} · FlyWire ${NEU.root_id[best]}`, touch);
+}
+brainC.addEventListener("pointermove", (ev) => { if (ev.pointerType === "mouse") brainTip(ev); });
+brainC.addEventListener("pointerdown", brainTip);
+brainC.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse") $("brainTip").hidden = true; });
 
 // ------------------------------------------------------------------ rendering: eyes
 const eyeCanvases = [$("eyeL"), $("eyeR")];
@@ -942,7 +1014,10 @@ function drawEyes() {
 }
 
 // ------------------------------------------------------------------ rendering: meters, stats
+const padKnob = $("padKnob");
 function updateMeters() {
+  padKnob.style.left = (state.you.x / CFG.W * 100) + "%";
+  padKnob.style.opacity = state.mode === "play" ? 1 : 0;
   const dn = state.dn, full = 120;
   $("m02L").style.width = Math.min(100, dn[0] / full * 100) + "%";
   $("m02R").style.width = Math.min(100, dn[1] / full * 100) + "%";
@@ -995,38 +1070,49 @@ function drawCurve() {
   curve.setAttribute("viewBox", `0 0 ${W} ${H}`);
   curve.innerHTML = s;
 }
-curve.addEventListener("pointermove", (ev) => {
-  const t = ev.target, tip = $("curveTip");
-  if (!(t instanceof SVGRectElement) || !t.dataset.i) { tip.hidden = true; return; }
+function curveTip(ev) {
+  const t = ev.target, tip = $("curveTip"), touch = ev.pointerType !== "mouse";
+  if (!(t instanceof SVGRectElement) || !t.dataset.i) { if (!touch) tip.hidden = true; return; }
   const i = +t.dataset.i, bk = state.blocks[i];
   const first = state.faced.length - state.blocks.length * 10 + i * 10 + 1;
-  tip.innerHTML = `balls ${first}–${first + 9}: <b>${bk.r} of 10</b> returned<br>eye gain ${bk.gain}/s · ${bk.trained ? "training on" : "no training"}`;
-  const wrap = curve.parentElement.getBoundingClientRect();
-  tip.style.left = (ev.clientX - wrap.left) + "px"; tip.style.top = (ev.clientY - wrap.top) + "px";
-  tip.hidden = false;
-});
-curve.addEventListener("pointerleave", () => { $("curveTip").hidden = true; });
+  placeTip(tip, curve.parentElement, ev.clientX, ev.clientY,
+    `balls ${first}–${first + 9}: <b>${bk.r} of 10</b> returned<br>eye gain ${bk.gain}/s · ${bk.trained ? "training on" : "no training"}`, touch);
+}
+curve.addEventListener("pointermove", (ev) => { if (ev.pointerType === "mouse") curveTip(ev); });
+curve.addEventListener("pointerdown", curveTip);
+curve.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse") $("curveTip").hidden = true; });
 
 // ------------------------------------------------------------------ controls
-function setMode(mode) {
+const isTouch = () => document.documentElement.classList.contains("touch") || (window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+window.addEventListener("touchstart", () => document.documentElement.classList.add("touch"), { once: true, passive: true });
+function setMode(mode, byUser) {
   state.mode = mode;
   $("modePlay").setAttribute("aria-pressed", mode === "play");
   $("modePractice").setAttribute("aria-pressed", mode === "practice");
-  $("modeCaption").textContent = mode === "play" ? "YOU (TOP) VS THE FLY (BOTTOM)" : "FLY PRACTISES AGAINST A WALL";
-  $("hint").textContent = mode === "play"
-    ? "Move the pointer or drag over the arena to steer your paddle. Arrow keys or A/D work too."
-    : "Click the arena or press ← → to take the top paddle and play against the fly.";
+  $("modeCaption").textContent = mode === "play" ? "YOU (TOP) VS THE FLY" : "THE FLY PRACTISES ON A WALL";
+  arena.classList.toggle("playing", mode === "play");
+  $("padLabel").textContent = mode === "play" ? "" : "touch here to play";
+  $("hint").textContent = isTouch()
+    ? (mode === "play" ? "Slide your thumb along the pad to move your paddle, or drag on the arena." : "Tap the arena or the pad below it to take the top paddle and play against the fly.")
+    : (mode === "play" ? "Move the pointer or drag over the arena to steer your paddle. Arrow keys or A/D work too." : "Click the arena or press ← → to take the top paddle and play against the fly.");
   $("practiceFast").disabled = false;
   state.you.x = 0.5; state.you.target = null;
   serve("fly");
+  if (byUser && mode === "play" && window.innerWidth <= 900) {
+    const col = document.querySelector(".arena-col"), r = col.getBoundingClientRect();
+    if (r.top < -2 || r.top + col.offsetHeight > window.innerHeight + 2) {
+      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      col.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    }
+  }
 }
 function setGain(v) {
   state.gain = +v; $("gain").value = v; $("gainVal").textContent = `${v} spikes/s`;
   $("presetNaive").setAttribute("aria-pressed", +v === 45);
   $("presetCourting").setAttribute("aria-pressed", +v === 120);
 }
-$("modePlay").onclick = () => setMode("play");
-$("modePractice").onclick = () => setMode("practice");
+$("modePlay").onclick = () => setMode("play", true);
+$("modePractice").onclick = () => setMode("practice", true);
 $("gain").oninput = (e) => setGain(e.target.value);
 $("presetNaive").onclick = () => { setGain(45); plast.reset(); updateStats(); };
 $("presetCourting").onclick = () => setGain(120);
@@ -1042,17 +1128,43 @@ $("practiceFast").onclick = () => {
   state.running = true; $("pauseBtn").textContent = "Pause";
   state.ff = 6000;   // 60 s of game time
 };
-function pointerX(ev) { const r = arena.getBoundingClientRect(); return clamp((ev.clientX - r.left) / r.width * CFG.W, CFG.paddleHalf, CFG.W - CFG.paddleHalf); }
-arena.addEventListener("pointermove", (ev) => { if (state.mode === "play") state.you.target = pointerX(ev); });
+function fieldX(el, ev) { const r = el.getBoundingClientRect(); return clamp((ev.clientX - r.left) / r.width * CFG.W, CFG.paddleHalf, CFG.W - CFG.paddleHalf); }
+let tapStart = null;
 arena.addEventListener("pointerdown", (ev) => {
-  if (state.mode !== "play") setMode("play");
-  state.you.target = pointerX(ev);
-  arena.setPointerCapture(ev.pointerId);
+  if (ev.pointerType === "mouse" || state.mode === "play") {
+    if (state.mode !== "play") setMode("play", true);
+    state.you.target = fieldX(arena, ev);
+    arena.setPointerCapture(ev.pointerId);
+  } else {
+    tapStart = { x: ev.clientX, y: ev.clientY, t: performance.now(), id: ev.pointerId };   // wait: a swipe here should scroll the page
+  }
+});
+arena.addEventListener("pointermove", (ev) => {
+  if (state.mode !== "play") return;
+  if (ev.pointerType === "mouse" || arena.hasPointerCapture(ev.pointerId)) state.you.target = fieldX(arena, ev);
+});
+arena.addEventListener("pointerup", (ev) => {
+  if (tapStart && ev.pointerId === tapStart.id && Math.hypot(ev.clientX - tapStart.x, ev.clientY - tapStart.y) < 12 && performance.now() - tapStart.t < 600) {
+    setMode("play", true);
+    state.you.target = fieldX(arena, ev);
+  }
+  tapStart = null;
+});
+arena.addEventListener("pointercancel", () => { tapStart = null; });
+const pad = $("pad");
+pad.addEventListener("pointerdown", (ev) => {
+  ev.preventDefault();
+  if (state.mode !== "play") setMode("play", true);
+  state.you.target = fieldX(pad, ev);
+  pad.setPointerCapture(ev.pointerId);
+});
+pad.addEventListener("pointermove", (ev) => {
+  if (state.mode === "play" && pad.hasPointerCapture(ev.pointerId)) state.you.target = fieldX(pad, ev);
 });
 window.addEventListener("keydown", (e) => {
   if (e.target instanceof HTMLInputElement) return;
-  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") { state.keys.l = true; if (state.mode !== "play") setMode("play"); e.preventDefault(); }
-  if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") { state.keys.r = true; if (state.mode !== "play") setMode("play"); e.preventDefault(); }
+  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") { state.keys.l = true; if (state.mode !== "play") setMode("play", true); e.preventDefault(); }
+  if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") { state.keys.r = true; if (state.mode !== "play") setMode("play", true); e.preventDefault(); }
 });
 window.addEventListener("keyup", (e) => {
   if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") state.keys.l = false;
@@ -1060,6 +1172,11 @@ window.addEventListener("keyup", (e) => {
 });
 
 // ------------------------------------------------------------------ main loop
+function setSpeedCaption(text, normal) {
+  const el = $("speedCaption");
+  if (el.textContent !== text) el.textContent = text;
+  el.classList.toggle("normal", normal);
+}
 let last = performance.now(), acc = 0, statT = 0, simMsWindow = 0, wallMsWindow = 0;
 function loop(now) {
   const el = Math.min(100, now - last); last = now;
@@ -1068,8 +1185,8 @@ function loop(now) {
     let ticks = 0;
     if (state.ff > 0) {
       while (performance.now() - t0 < 14 && state.ff > 0) { tick(); state.ff--; ticks++; }
-      $("speedCaption").textContent = `PRACTISING · ${Math.ceil(state.ff / 100)} S LEFT`;
-      if (state.ff === 0) $("speedCaption").textContent = "1× REAL TIME";
+      setSpeedCaption(`PRACTISING · ${Math.ceil(state.ff / 100)} S LEFT`, false);
+      if (state.ff === 0) setSpeedCaption("1× REAL TIME", true);
     } else {
       acc += el;
       while (acc >= CFG.tickMs && ticks < 10) { tick(); acc -= CFG.tickMs; ticks++; }
@@ -1078,7 +1195,7 @@ function loop(now) {
     simMsWindow += ticks * CFG.tickMs; wallMsWindow += el;
     if (wallMsWindow > 1000) {
       state.simRate = simMsWindow / wallMsWindow;
-      if (state.ff === 0) $("speedCaption").textContent = state.simRate > 0.93 ? "1× REAL TIME" : `${state.simRate.toFixed(2)}× REAL TIME (SLOW DEVICE)`;
+      if (state.ff === 0) setSpeedCaption(state.simRate > 0.93 ? "1× REAL TIME" : `${state.simRate.toFixed(2)}× REAL TIME · SLOW DEVICE`, state.simRate > 0.93);
       simMsWindow = 0; wallMsWindow = 0;
     }
   }
@@ -1117,3 +1234,5 @@ window.claude?.hot?.snapshot?.(() => ({
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 })();
 </script>
+</body>
+</html>
