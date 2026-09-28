@@ -10,7 +10,9 @@ ball ─► LC10a eye neurons (234) ─► AOTU019 / AOTU025 ─► … 1,128 mo
 
 ## Play
 
-Open `game/index.html` in a browser. It works straight from disk, because the circuit loads as a script from `game/data/`. You can also serve the folder (`python3 -m http.server -d game`) or turn on GitHub Pages for `/game`.
+**Live: https://kaiwong-sapiens.github.io/fly-net/**
+
+Or open `game/index.html` in a browser. It works straight from disk, because the circuit loads as a script from `game/data/`, or you can serve the folder with `python3 -m http.server -d game`.
 
 - **You play**: click the arena or use ← → / A D to take the top paddle.
 - **Naive fly / Courting fly**: eye gain 45 vs 120 spikes/s. Courting males turn up LC10a gain to chase a female (Hindmarsh Sten et al. 2021).
@@ -57,6 +59,14 @@ One Brian2 detail mattered and is copied in `flysim.py` and the browser engine: 
   - the steering → paddle gain (0.045 field widths/s per spike/s) and 25 ms smoothing;
   - the learning rule: a three-factor rule where an eligibility trace (τ = 0.8 s) of pre×post coincidences is turned into change by dopamine, clipped to 0–3× the wired strength, and applied to LC10a output synapses. This is the mushroom body's form of plasticity, and applying it here is our assumption;
   - "arousal" as an input gain. P1 neurons raise LC10a gain in courting males, but this is a female brain with no P1.
+
+## Deploy
+
+The site is served by GitHub Pages from the `gh-pages` branch, which holds a copy of `game/`. After changing the game on `main`, publish it with:
+
+```bash
+git subtree push --prefix game origin gh-pages
+```
 
 ## Reproduce
 
