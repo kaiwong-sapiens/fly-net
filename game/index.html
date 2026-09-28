@@ -167,14 +167,22 @@ button, input, select { font: inherit; }
 .brain-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .brain-head .status { font-family: var(--f-mono); font-size: 11px; color: var(--screen-ink-2); font-variant-numeric: tabular-nums; }
 #brain { display: block; width: 100%; max-width: 100%; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--f-mono); font-size: 11.5px; color: var(--screen-ink-2); }
-.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 24px; font-family: var(--f-mono); font-size: 12px; }
+@media (min-width: 640px) { .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.legend .key { display: grid; grid-template-columns: 10px 17ch minmax(0, 1fr) auto; align-items: baseline; gap: 10px; width: 100%; padding: 7px 6px; border-radius: 4px; text-decoration: none; color: var(--screen-ink-2); }
+.legend .key i { width: 9px; height: 9px; border-radius: 50%; align-self: center; }
+.legend .k-role { color: var(--screen-ink); text-decoration: underline dotted 1px; text-underline-offset: 3px; text-decoration-color: rgba(216, 226, 218, .45); }
+.legend .k-types { font-size: 11px; overflow-wrap: anywhere; }
+.legend .k-n { font-variant-numeric: tabular-nums; text-align: right; }
 /* jargon you can tap: dotted underline, opens a short explanation */
 .term { font: inherit; color: inherit; letter-spacing: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left;
   text-decoration: underline dotted 1px; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 55%, transparent); }
-.term:hover, .term[aria-expanded="true"] { color: var(--ink); text-decoration-style: solid; }
-.legend .term:hover, .legend .term[aria-expanded="true"] { color: var(--screen-ink); }
-@media (pointer: coarse) { .term { padding-block: 5px; margin-block: -5px; } .legend { gap: 10px 16px; } }
+.term[aria-expanded="true"] { color: var(--ink); text-decoration-style: solid; }
+@media (hover: hover) { .term:hover { color: var(--ink); text-decoration-style: solid; } }
+.legend .key[aria-expanded="true"] { background: rgba(216, 226, 218, .07); }
+@media (hover: hover) { .legend .key:hover { background: rgba(216, 226, 218, .07); } }
+.legend .key[aria-expanded="true"] .k-role { text-decoration-style: solid; }
+@media (pointer: coarse) { .term:not(.key) { padding-block: 5px; margin-block: -5px; } .legend .key { padding-block: 10px; } }
 .info-pop { position: fixed; z-index: 60; width: max-content; max-width: min(340px, calc(100vw - 24px)); padding: 14px 16px 14px; border-radius: 8px;
   background: var(--panel); color: var(--ink); border: 1px solid var(--rule); box-shadow: 0 10px 30px rgba(10, 20, 14, .22); }
 .info-pop h4 { margin: 0 28px 6px 0; font-family: var(--f-mono); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
@@ -188,7 +196,9 @@ button, input, select { font: inherit; }
 .eyes-wrap, .steer-wrap { padding: 12px; display: grid; gap: 8px; align-content: start; }
 .eyes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .eyes canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 1.5 / 1; }
-.eyes-foot { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 11px; color: var(--screen-ink-2); font-variant-numeric: tabular-nums; }
+.eye { margin: 0; display: grid; gap: 5px; min-width: 0; }
+.eye figcaption { font-family: var(--f-mono); font-size: 11px; color: var(--screen-ink-2); text-align: center; }
+.ball-read { margin: 2px 0 0; text-align: center; font-family: var(--f-mono); font-size: 12px; color: var(--screen-ink); font-variant-numeric: tabular-nums; }
 
 .meter { display: grid; grid-template-columns: 58px 1fr 1fr; align-items: center; gap: 4px; font-family: var(--f-mono); font-size: 11.5px; }
 .meter .name { color: var(--screen-ink); }
@@ -325,10 +335,10 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         </div>
         <canvas id="brain" aria-label="Map of the fly brain showing the 1,370 simulated neurons at their real positions, flashing when they spike." role="img"></canvas>
         <div class="legend">
-          <button class="term" data-info="lc10a"><i style="background:var(--s-lc)"></i>LC10a eye neurons · 234</button>
-          <button class="term" data-info="aotu"><i style="background:var(--s-aotu)"></i>AOTU019 / AOTU025 · 4</button>
-          <button class="term" data-info="dn"><i style="background:var(--s-dn)"></i>DNa02 / DNa01 steering · 4</button>
-          <button class="term" data-info="other"><i style="background:var(--s-other)"></i>other neurons it reaches · 1,128</button>
+          <button class="term key" data-info="lc10a"><i style="background:var(--s-lc)"></i><span class="k-role">Eye neurons</span><span class="k-types">LC10a</span><span class="k-n">234</span></button>
+          <button class="term key" data-info="aotu"><i style="background:var(--s-aotu)"></i><span class="k-role">Relay neurons</span><span class="k-types">AOTU019 · AOTU025</span><span class="k-n">4</span></button>
+          <button class="term key" data-info="dn"><i style="background:var(--s-dn)"></i><span class="k-role">Steering neurons</span><span class="k-types">DNa02 · DNa01</span><span class="k-n">4</span></button>
+          <button class="term key" data-info="other"><i style="background:var(--s-other)"></i><span class="k-role">Other neurons</span><span class="k-types">in the circuit</span><span class="k-n">1,128</span></button>
         </div>
         <div class="tip" id="brainTip" hidden></div>
       </div>
@@ -337,10 +347,10 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         <div class="screen eyes-wrap">
           <span class="label">What its eyes report · LC10a receptive fields</span>
           <div class="eyes">
-            <canvas id="eyeA" aria-label="The fly's right eye: LC10a activity" role="img"></canvas>
-            <canvas id="eyeB" aria-label="The fly's left eye: LC10a activity" role="img"></canvas>
+            <figure class="eye"><canvas id="eyeA" aria-label="The fly's right eye: LC10a activity" role="img"></canvas><figcaption>its right eye</figcaption></figure>
+            <figure class="eye"><canvas id="eyeB" aria-label="The fly's left eye: LC10a activity" role="img"></canvas><figcaption>its left eye</figcaption></figure>
           </div>
-          <div class="eyes-foot"><span>its right eye</span><span id="ballRead">ball dead ahead · 2° wide</span><span>its left eye</span></div>
+          <p class="ball-read" id="ballRead">ball dead ahead · 2° wide</p>
         </div>
         <div class="screen steer-wrap">
           <span class="label">Steering neurons · spikes/s</span>
@@ -405,7 +415,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     <div>
       <h2>How the fly plays</h2>
       <p>Each paddle movement is the end of a chain of spikes through real wiring. The chain below is the fly's visual pursuit pathway, the one males use to chase a moving female during courtship.</p>
-      <p>Watch how it plays. While the ball is roughly in front, the fly holds still. Once the ball drifts more than about 40° to one side, which happens late in its approach, the fly swings toward it. That style comes straight out of the wiring: the central relay barely reaches the steering neurons, and the peripheral relay drives them hard.</p>
+      <p>Watch how it plays. While the ball is roughly in front, the fly holds still. Once the ball drifts more than about 40° to one side, which happens late in its approach, the fly swings toward it. That style comes straight out of the wiring. The peripheral relay, AOTU025, excites the steering neuron on its own side. The central relay, AOTU019, uses the inhibitory transmitter GABA and holds down the steering neuron on the opposite side, so a ball in front keeps both steering neurons quiet.</p>
       <div class="path">
         <div class="stage">
           <span class="step">1 · EYES</span>
@@ -417,7 +427,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           <span class="step">2 · RELAY</span>
           <span class="what"><span class="dot" style="background:var(--role-aotu)"></span>AOTU019 · AOTU025</span>
           <span class="n">4</span>
-          <p>Two parallel pursuit pathways in the anterior optic tubercle, one for the centre of view and one for the periphery.</p>
+          <p>Two pursuit relays in the anterior optic tubercle. AOTU025 (periphery) excites the steering neuron on its side; AOTU019 (centre of view) inhibits the one on the other side.</p>
         </div>
         <div class="stage">
           <span class="step">3 · NETWORK</span>
@@ -1401,12 +1411,12 @@ const INFO = {
   connections: { t: "82,282 connections", p: "The links between those 1,370 neurons. Each carries the number of synapses FlyWire counted between the two cells, and a sign from the transmitter the sending cell is predicted to use: GABA and glutamate inhibit, the rest excite. Its strength is the synapse count × 0.275 millivolts." },
   model: { t: "Spiking model", p: "Every neuron is the same simple unit: it adds up incoming signals, leaks back towards rest, and fires a spike when it crosses a threshold. Only the wiring differs. Shiu et al. used this model on the whole FlyWire brain to find the neurons behind feeding and grooming, and the simulator here reproduces theirs (r = 0.999).",
     link: ["Shiu et al., Nature 2024", "https://www.nature.com/articles/s41586-024-07763-9"] },
-  lc10a: { t: "LC10a eye neurons", p: "Visual neurons that respond to small moving objects. Male flies use them to chase a female during courtship. Each of the 234, about 115 per eye, watches its own patch of the visual field, and the ball excites the ones it falls in." },
-  aotu: { t: "AOTU019 and AOTU025", p: "Relay neurons in the anterior optic tubercle, one of each per side. AOTU019 handles objects near the centre of view and AOTU025 the periphery. In this model the peripheral one drives steering hardest, which is why the fly swings late.",
+  lc10a: { t: "Eye neurons · LC10a", p: "Visual neurons that respond to small moving objects. Male flies use them to chase a female during courtship. Each of the 234, about 115 per eye, watches its own patch of the visual field, and the ball excites the ones it falls in." },
+  aotu: { t: "Relay neurons · AOTU019, AOTU025", p: "Two relays per side in the anterior optic tubercle pass the eye signal on to the steering neurons. AOTU025 serves the periphery and excites the steering neuron on its own side, about 160 synapses. AOTU019 serves the centre of view; it uses GABA, so it is inhibitory, and holds down the steering neuron on the opposite side. A ball in front keeps both steering neurons quiet; a ball off to one side makes the fly turn.",
     link: ["Collie et al., Neuron 2026", "https://www.biorxiv.org/content/10.1101/2025.04.23.650240v2"] },
-  dn: { t: "DNa02 and DNa01", p: "Descending neurons, which carry commands from the brain down to the body. In walking flies, the right-minus-left firing of these cells predicts turning. Here that difference moves the paddle.",
+  dn: { t: "Steering neurons · DNa02, DNa01", p: "Descending neurons, which carry commands from the brain down to the body. In walking flies, the right-minus-left firing of these cells predicts turning. Here that difference moves the paddle. Each DNa02 hears from about 750 partner cells through 12,000 to 13,000 synapses, about a third of them inhibitory.",
     link: ["Rayshubskiy et al., eLife 2025", "https://elifesciences.org/articles/102230"] },
-  other: { t: "Other neurons it reaches", p: "Every other neuron that the eye signals can make fire on their way to the steering neurons, excitatory and inhibitory. Together they shape the steering command, and training can recruit more of them." },
+  other: { t: "Other neurons in the circuit", p: "Every other neuron that the eye signals can make fire on their way to the steering neurons, excitatory and inhibitory. Together they shape the steering command, and training can recruit more of them." },
 };
 const infoPop = $("infoPop");
 let infoFor = null;
