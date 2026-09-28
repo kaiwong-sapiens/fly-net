@@ -1226,25 +1226,45 @@ function sizeEyes() {
     e.base = base;
   }
 }
-// a shaded sphere lit from the upper left, with a soft shadow and a dark rim to lift it off the neurons behind it
-function drawEyeBall(g, x, y, r, px) {
-  g.save();
-  g.shadowColor = "rgba(0, 0, 0, 0.7)"; g.shadowBlur = Math.max(4 * px, r * 0.7); g.shadowOffsetY = Math.max(1.5 * px, r * 0.15);
-  const shade = g.createRadialGradient(x - r * 0.38, y - r * 0.42, r * 0.05, x, y, r);
-  shade.addColorStop(0, "#ffffff"); shade.addColorStop(0.28, "#eef3ef"); shade.addColorStop(0.72, "#a9b5ac"); shade.addColorStop(1, "#5f6c63");
+// the ball as a glass sphere: its body is drawn under the neurons and is nearly clear in the middle, so the
+// neurons it excites stay visible through it; the rim, shading and highlight go on top to give it volume
+function eyeBallBody(g, x, y, r) {
+  const body = g.createRadialGradient(x, y, 0, x, y, r);
+  body.addColorStop(0, "rgba(226, 234, 228, 0.07)"); body.addColorStop(0.62, "rgba(226, 234, 228, 0.13)");
+  body.addColorStop(0.88, "rgba(226, 234, 228, 0.3)"); body.addColorStop(1, "rgba(226, 234, 228, 0.5)");
+  g.fillStyle = body; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+}
+function eyeBallFront(g, x, y, r, px) {
+  const shade = g.createRadialGradient(x - r * 0.4, y - r * 0.45, 0, x - r * 0.15, y - r * 0.2, r * 1.2);
+  shade.addColorStop(0, "rgba(255, 255, 255, 0.22)"); shade.addColorStop(0.45, "rgba(255, 255, 255, 0.04)");
+  shade.addColorStop(0.75, "rgba(7, 11, 9, 0)"); shade.addColorStop(1, "rgba(7, 11, 9, 0.45)");
   g.fillStyle = shade; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
-  g.restore();
-  g.strokeStyle = "rgba(7, 11, 9, 0.9)"; g.lineWidth = 1.25 * px;
-  g.beginPath(); g.arc(x, y, r + g.lineWidth / 2, 0, 7); g.stroke();
+  const hx = x - r * 0.4, hy = y - r * 0.44, hr = Math.max(1.6 * px, r * 0.2);
+  const spec = g.createRadialGradient(hx, hy, 0, hx, hy, hr);
+  spec.addColorStop(0, "rgba(255, 255, 255, 0.95)"); spec.addColorStop(1, "rgba(255, 255, 255, 0)");
+  g.fillStyle = spec; g.beginPath(); g.arc(hx, hy, hr, 0, 7); g.fill();
+  g.lineWidth = 1.1 * px;
+  g.strokeStyle = "rgba(7, 11, 9, 0.75)"; g.beginPath(); g.arc(x, y, r + 1.1 * px, 0, 7); g.stroke();
+  g.strokeStyle = "rgba(226, 234, 228, 0.9)"; g.beginPath(); g.arc(x, y, r, 0, 7); g.stroke();
 }
 const liveShown = {};
 function setLive(id, val) { if (liveShown[id] !== val) { liveShown[id] = val; $(id).textContent = val; } }
 function drawEyes() {
-  const rates = S.rates, gmax = 150;
-  for (const e of EYES) {
-    const g = e.c.getContext("2d");
+  const rates = S.rates, gmax = 150, az = S.view.az;
+  // The ball as the fly sees it: its true angular size, plus a few pixels so a distant ball stays visible.
+  // It is drawn whole, never cut by a map's edge: in each eye whose map holds all of it (both eyes when a
+  // distant ball is near straight ahead); if neither does, in the eye on its side, shrunk to fit.
+  const rDeg = S.view.size / 2 + 4.5 * EYES[0].dpr / (EYES[0].c.width / (EYES[0].hi - EYES[0].lo));
+  const fits = EYES.map((e) => az - rDeg >= e.lo && az + rDeg <= e.hi);
+  const own = az >= 0 ? 0 : 1;
+  for (let i = 0; i < EYES.length; i++) {
+    const e = EYES[i], g = e.c.getContext("2d");
     g.globalAlpha = 1;
     g.drawImage(e.base, 0, 0);
+    const ball = fits[i] || (i === own && !fits[0] && !fits[1]);
+    const rd = fits[i] ? rDeg : Math.max(0, Math.min(rDeg, az - e.lo, e.hi - az));
+    const r = rd * e.c.width / (e.hi - e.lo), bx = e.X(az), by = e.Y(0), px = e.dpr;
+    if (ball) eyeBallBody(g, bx, by, r);
     g.fillStyle = "#a6ff6e";
     for (let k = 0; k < LCAZ.length; k++) {
       if (LCRIGHT[k] !== e.right) continue;
@@ -1254,10 +1274,7 @@ function drawEyes() {
       g.beginPath(); g.arc(e.X(LCAZ[k]), e.Y(LCEL[k]), e.rr * 1.15, 0, 7); g.fill();
     }
     g.globalAlpha = 1;
-    // the ball as the fly sees it: its true angular size, plus a few pixels so a distant ball stays visible
-    const az = S.view.az, perDeg = e.c.width / (e.hi - e.lo), px = e.dpr;
-    const r = (S.view.size / 2) * perDeg + 4.5 * px;
-    if (az + r / perDeg >= e.lo && az - r / perDeg <= e.hi) drawEyeBall(g, e.X(az), e.Y(0), r, px);
+    if (ball) eyeBallFront(g, bx, by, r, px);
   }
   // model input: the ball's direction and apparent size, in fixed-width slots
   setLive("ballAz", String(Math.min(99, Math.abs(Math.round(S.view.az)))));
