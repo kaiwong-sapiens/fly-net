@@ -1,0 +1,1118 @@
+<title>Fly Pong</title>
+<meta name="description" content="Play Pong against 1,370 spiking neurons from the FlyWire fruit-fly connectome, and train it with dopamine.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@600;900&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap">
+<style>
+:root {
+  --paper: #eef1ec;
+  --paper-2: #e3e8e1;
+  --panel: #f7f9f5;
+  --ink: #111a14;
+  --ink-2: #45524a;
+  --ink-3: #6c7a71;
+  --rule: #c6cfc7;
+  --accent: #2f7d38;
+  --accent-ink: #ffffff;
+  --sugar: #9a6f00;
+  --heat: #c23f1a;
+  --role-lc: #2f8f3a;
+  --role-aotu: #2a7fc4;
+  --role-dn: #c8428c;
+  --role-other: #8a968e;
+  /* instrument screens stay dark in both themes */
+  --screen: #0a0f0c;
+  --screen-2: #101712;
+  --screen-rule: #223027;
+  --screen-ink: #d8e2da;
+  --screen-ink-2: #8a988f;
+  --led-on: #a6ff6e;
+  --led-off: #14211a;
+  --s-lc: #46a13c;
+  --s-aotu: #3a8fe0;
+  --s-dn: #e2559c;
+  --s-other: #56625b;
+  --s-sugar: #f2b705;
+  --s-heat: #ff6b3d;
+  --f-display: "Doto", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --f-prose: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1310;
+    --paper-2: #151c17;
+    --panel: #141b16;
+    --ink: #e4ebe5;
+    --ink-2: #a8b5ac;
+    --ink-3: #77857c;
+    --rule: #2a352e;
+    --accent: #6cc561;
+    --accent-ink: #0b120d;
+    --sugar: #f2b705;
+    --heat: #ff7a4d;
+    --role-lc: #46a13c;
+    --role-aotu: #3a8fe0;
+    --role-dn: #e2559c;
+    --role-other: #6d7a72;
+    --screen: #070b09;
+    --screen-rule: #26332b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1310;
+  --paper-2: #151c17;
+  --panel: #141b16;
+  --ink: #e4ebe5;
+  --ink-2: #a8b5ac;
+  --ink-3: #77857c;
+  --rule: #2a352e;
+  --accent: #6cc561;
+  --accent-ink: #0b120d;
+  --sugar: #f2b705;
+  --heat: #ff7a4d;
+  --role-lc: #46a13c;
+  --role-aotu: #3a8fe0;
+  --role-dn: #e2559c;
+  --role-other: #6d7a72;
+  --screen: #070b09;
+  --screen-rule: #26332b;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { background: var(--paper); }
+body { color: var(--ink); font-family: var(--f-prose); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-underline-offset: 2px; }
+button, input, select { font: inherit; }
+
+.page { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 72px; display: grid; gap: 36px; }
+
+/* ---------- masthead ---------- */
+.masthead { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 32px; align-items: end; }
+.wordmark { font-family: var(--f-display); font-weight: 900; font-size: clamp(52px, 9vw, 96px); line-height: .82; letter-spacing: .02em; margin: 0; color: var(--ink); }
+.wordmark span { color: var(--accent); }
+.lede { margin: 0; max-width: 62ch; font-size: 19px; line-height: 1.45; text-wrap: pretty; }
+.specline { grid-column: 1 / -1; margin: 6px 0 0; font-family: var(--f-mono); font-size: 12px; letter-spacing: .04em; color: var(--ink-3); border-top: 1px solid var(--rule); padding-top: 10px; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) { .masthead { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- bench ---------- */
+.bench { display: grid; grid-template-columns: minmax(280px, 420px) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } .arena-col { width: 100%; max-width: 440px; justify-self: center; } }
+
+.label { font-family: var(--f-mono); font-size: 11px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); }
+.screen { background: var(--screen); border: 1px solid var(--screen-rule); border-radius: 6px; color: var(--screen-ink); position: relative; }
+.screen .label { color: var(--screen-ink-2); }
+
+.arena-col { display: grid; gap: 10px; }
+.scoreboard { display: grid; grid-template-columns: 1fr auto auto auto 1fr; align-items: center; gap: 10px; }
+.scoreboard .who { font-family: var(--f-mono); font-size: 12px; letter-spacing: .1em; color: var(--ink-3); }
+.scoreboard .who.you { justify-self: end; }
+.scoreboard .digits { font-family: var(--f-display); font-weight: 900; font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); min-width: 2ch; text-align: center; }
+.scoreboard .colon { font-family: var(--f-display); font-size: 34px; color: var(--ink-3); }
+.arena-wrap { padding: 10px; }
+#arena { display: block; width: 100%; aspect-ratio: 1 / 1.4; max-width: 100%; border-radius: 3px; touch-action: none; cursor: ew-resize; }
+.arena-caption { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; font-family: var(--f-mono); font-size: 11px; letter-spacing: .06em; color: var(--screen-ink-2); }
+.hint { font-family: var(--f-mono); font-size: 12px; color: var(--ink-3); line-height: 1.5; margin: 0; }
+
+.lab-col { display: grid; gap: 16px; min-width: 0; }
+.brain-wrap { padding: 12px 12px 10px; display: grid; gap: 8px; }
+.brain-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brain-head .status { font-family: var(--f-mono); font-size: 11px; color: var(--screen-ink-2); font-variant-numeric: tabular-nums; }
+#brain { display: block; width: 100%; max-width: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--f-mono); font-size: 11.5px; color: var(--screen-ink-2); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+
+.sense-row { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 640px) { .sense-row { grid-template-columns: minmax(0, 1fr); } }
+.eyes-wrap, .steer-wrap { padding: 12px; display: grid; gap: 8px; align-content: start; }
+.eyes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.eyes canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 1.5 / 1; }
+.eyes-foot { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 11px; color: var(--screen-ink-2); font-variant-numeric: tabular-nums; }
+
+.meter { display: grid; grid-template-columns: 58px 1fr 1fr; align-items: center; gap: 4px; font-family: var(--f-mono); font-size: 11.5px; }
+.meter .name { color: var(--screen-ink); }
+.meter .bar { height: 12px; background: var(--screen-2); position: relative; border-radius: 2px; overflow: hidden; }
+.meter .bar i { position: absolute; top: 0; bottom: 0; background: var(--s-dn); border-radius: 2px; }
+.meter .bar.l i { right: 0; }
+.meter .bar.r i { left: 0; }
+.meter-scale { display: grid; grid-template-columns: 58px 1fr 1fr; gap: 4px; font-family: var(--f-mono); font-size: 10.5px; color: var(--screen-ink-2); font-variant-numeric: tabular-nums; }
+.meter-scale span:nth-child(2) { text-align: left; }
+.meter-scale span:nth-child(3) { text-align: right; }
+.turn { display: grid; gap: 6px; margin-top: 4px; }
+.turn-track { position: relative; height: 18px; border-top: 1px solid var(--screen-rule); border-bottom: 1px solid var(--screen-rule); }
+.turn-track::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--screen-ink-2); opacity: .5; }
+.turn-needle { position: absolute; top: 2px; bottom: 2px; width: 4px; margin-left: -2px; left: 50%; background: var(--led-on); border-radius: 2px; }
+.turn-read { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 11px; color: var(--screen-ink-2); font-variant-numeric: tabular-nums; }
+
+/* ---------- controls ---------- */
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+.group { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; display: grid; gap: 10px; align-content: start; }
+.group h3 { margin: 0; font-family: var(--f-mono); font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.btn, .seg button { font-family: var(--f-mono); font-size: 12.5px; line-height: 1.2; padding: 9px 10px; border: 0; background: var(--panel); color: var(--ink); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.btn { border: 1px solid var(--rule); border-radius: 4px; }
+.btn:hover, .seg button:hover { background: var(--paper-2); }
+.seg button[aria-pressed="true"]:hover { background: var(--ink); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.05); background: var(--accent); }
+.btn.sugar { color: var(--sugar); border-color: color-mix(in srgb, var(--sugar) 45%, var(--rule)); }
+.btn.heat { color: var(--heat); border-color: color-mix(in srgb, var(--heat) 45%, var(--rule)); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row .btn { flex: 1 1 auto; }
+.slider { display: grid; gap: 4px; }
+.slider-top { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.check { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; font-family: var(--f-mono); font-size: 12px; line-height: 1.45; color: var(--ink-2); cursor: pointer; }
+.check input { margin-top: 2px; accent-color: var(--accent); width: 15px; height: 15px; }
+.check b { color: var(--ink); font-weight: 500; }
+.da { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; font-family: var(--f-mono); font-size: 11px; color: var(--ink-3); }
+.da-track { height: 8px; border-radius: 4px; background: var(--paper-2); position: relative; overflow: hidden; }
+.da-track::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--rule); }
+.da-fill { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; }
+.small { font-family: var(--f-mono); font-size: 11.5px; color: var(--ink-3); line-height: 1.5; margin: 0; }
+
+/* ---------- stats ---------- */
+.stats { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 16px; }
+@media (max-width: 640px) { .stats { grid-template-columns: minmax(0, 1fr); } }
+.figs { display: grid; gap: 12px; align-content: start; }
+.fig .v { font-family: var(--f-display); font-weight: 900; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+.fig .v small { font-family: var(--f-mono); font-weight: 400; font-size: 13px; color: var(--ink-3); margin-left: 6px; }
+.fig .k { font-family: var(--f-mono); font-size: 11.5px; color: var(--ink-3); margin-top: 4px; line-height: 1.45; }
+.chart { position: relative; }
+#curve { display: block; width: 100%; height: 170px; overflow: visible; }
+#curve text { font-family: var(--f-mono); font-size: 10.5px; fill: var(--ink-3); }
+#curve .grid { stroke: var(--rule); stroke-width: 1; }
+#curve .base { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; }
+#curve .bar { fill: var(--accent); }
+#curve .bar.naive { fill: var(--role-other); }
+#curve .hit { fill: transparent; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--paper); font-family: var(--f-mono); font-size: 11.5px; line-height: 1.4; padding: 6px 8px; border-radius: 4px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px)); z-index: 5; }
+.screen .tip { background: var(--screen-ink); color: var(--screen); }
+
+/* ---------- notes ---------- */
+.notes { display: grid; gap: 40px; border-top: 1px solid var(--rule); padding-top: 32px; }
+.notes h2 { font-family: var(--f-prose); font-weight: 600; font-size: 28px; line-height: 1.15; margin: 0 0 14px; text-wrap: balance; letter-spacing: -.005em; }
+.notes p { margin: 0 0 12px; max-width: 66ch; text-wrap: pretty; }
+.path { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--panel); }
+@media (max-width: 900px) { .path { grid-template-columns: minmax(0, 1fr); } }
+.stage { padding: 16px; display: grid; gap: 6px; align-content: start; position: relative; }
+.stage + .stage { border-left: 1px solid var(--rule); }
+@media (max-width: 900px) { .stage + .stage { border-left: 0; border-top: 1px solid var(--rule); } }
+.stage .step { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; color: var(--ink-3); }
+.stage .what { font-family: var(--f-mono); font-size: 15px; font-weight: 600; }
+.stage .n { font-family: var(--f-display); font-weight: 900; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.stage p { font-size: 15px; line-height: 1.45; margin: 0; color: var(--ink-2); }
+.stage .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+@media (max-width: 760px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.two h3 { font-family: var(--f-mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 10px; }
+.two ul, .checks ul, .sources ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+.two li, .checks li { font-size: 16px; line-height: 1.5; max-width: 62ch; }
+.checks li b, .two li b { font-weight: 600; }
+.num { font-family: var(--f-mono); font-size: .88em; font-variant-numeric: tabular-nums; }
+.sources li { font-size: 15.5px; line-height: 1.45; }
+.sources .src { color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { .turn-needle { transition: none; } }
+</style>
+
+<main class="page">
+  <header class="masthead">
+    <h1 class="wordmark">FLY<br><span>PONG</span></h1>
+    <p class="lede">The bottom paddle belongs to 1,370 neurons from a real fruit-fly brain. The ball lights up the fly's object-detecting eye cells, the fly's own wiring turns that into steering commands, and the steering moves its paddle. Nothing about its play is scripted, and you can train it.</p>
+    <p class="specline">FlyWire whole-brain connectome, release 783 &nbsp;·&nbsp; 1,370 of 138,639 neurons &nbsp;·&nbsp; 82,282 connections &nbsp;·&nbsp; spiking model after Shiu et al. 2024</p>
+  </header>
+
+  <section class="bench" aria-label="Game">
+    <div class="arena-col">
+      <div class="scoreboard" aria-live="polite">
+        <span class="who you">YOU</span>
+        <b class="digits" id="scoreYou">00</b>
+        <span class="colon">:</span>
+        <b class="digits" id="scoreFly">00</b>
+        <span class="who">FLY</span>
+      </div>
+      <div class="screen arena-wrap">
+        <canvas id="arena" aria-label="Pong arena. Your paddle is at the top, the fly's paddle at the bottom." role="img"></canvas>
+        <div class="arena-caption"><span id="modeCaption">FLY PRACTICES AGAINST A WALL</span><span id="speedCaption">1× REAL TIME</span></div>
+      </div>
+      <div class="seg" role="group" aria-label="Mode">
+        <button id="modePlay" aria-pressed="false">You play</button>
+        <button id="modePractice" aria-pressed="true">Fly practices</button>
+      </div>
+      <p class="hint" id="hint">Move the pointer or drag over the arena to steer your paddle. Arrow keys or A/D work too.</p>
+    </div>
+
+    <div class="lab-col">
+      <div class="screen brain-wrap">
+        <div class="brain-head">
+          <span class="label">Brain, seen from behind the head · live spikes</span>
+          <span class="status" id="brainStatus">0 neurons firing</span>
+        </div>
+        <canvas id="brain" aria-label="Map of the fly brain showing the 1,370 simulated neurons at their real positions, flashing when they spike." role="img"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--s-lc)"></i>LC10a eye neurons · 234</span>
+          <span><i style="background:var(--s-aotu)"></i>AOTU019 / AOTU025 · 4</span>
+          <span><i style="background:var(--s-dn)"></i>DNa02 / DNa01 steering · 4</span>
+          <span><i style="background:var(--s-other)"></i>other neurons it reaches · 1,128</span>
+        </div>
+        <div class="tip" id="brainTip" hidden></div>
+      </div>
+
+      <div class="sense-row">
+        <div class="screen eyes-wrap">
+          <span class="label">What its eyes report · LC10a receptive fields</span>
+          <div class="eyes">
+            <canvas id="eyeL" aria-label="Left eye LC10a activity" role="img"></canvas>
+            <canvas id="eyeR" aria-label="Right eye LC10a activity" role="img"></canvas>
+          </div>
+          <div class="eyes-foot"><span>left eye</span><span id="ballRead">ball at 0° · 2° wide</span><span>right eye</span></div>
+        </div>
+        <div class="screen steer-wrap">
+          <span class="label">Steering neurons · spikes/s</span>
+          <div class="meter-scale"><span></span><span>← left</span><span>right →</span></div>
+          <div class="meter"><span class="name">DNa02</span><div class="bar l"><i id="m02L"></i></div><div class="bar r"><i id="m02R"></i></div></div>
+          <div class="meter"><span class="name">DNa01</span><div class="bar l"><i id="m01L"></i></div><div class="bar r"><i id="m01R"></i></div></div>
+          <div class="turn">
+            <div class="turn-track"><div class="turn-needle" id="needle"></div></div>
+            <div class="turn-read"><span id="rateL">L 0</span><span id="turnRead">turn 0</span><span id="rateR">R 0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="group">
+          <h3>The fly</h3>
+          <div class="seg" role="group" aria-label="Fly preset">
+            <button id="presetNaive" aria-pressed="false">Naive fly</button>
+            <button id="presetCourting" aria-pressed="true">Courting fly</button>
+          </div>
+          <div class="slider">
+            <div class="slider-top"><label for="gain">Eye gain (arousal)</label><span id="gainVal">120 spikes/s</span></div>
+            <input type="range" id="gain" min="20" max="150" step="5" value="120">
+          </div>
+          <p class="small">Courting males turn up the gain of LC10a to chase a female. Low gain makes a sluggish, easily beaten fly.</p>
+          <div class="row">
+            <button class="btn" id="pauseBtn">Pause</button>
+            <button class="btn" id="resetScore">Reset score</button>
+          </div>
+        </div>
+        <div class="group">
+          <h3>Train it</h3>
+          <label class="check"><input type="checkbox" id="coach"><span><b>Coach.</b> Sugar while it steers toward the ball, heat while it steers away.</span></label>
+          <label class="check"><input type="checkbox" id="sparse"><span><b>Rally reward.</b> Sugar on every return, heat on every miss.</span></label>
+          <div class="row">
+            <button class="btn sugar" id="giveSugar">Give sugar</button>
+            <button class="btn heat" id="giveHeat">Give heat</button>
+          </div>
+          <div class="da"><span>heat</span><div class="da-track"><div class="da-fill" id="daFill"></div></div><span>sugar</span></div>
+          <div class="row">
+            <button class="btn primary" id="practiceFast">Fast practice, 60 s</button>
+            <button class="btn" id="resetSyn">Reset synapses</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="figs">
+          <div class="fig"><div class="v" id="retRecent">–</div><div class="k" id="retRecentK">fly returns, last 20 balls</div></div>
+          <div class="fig"><div class="v" id="synChanged">0</div><div class="k" id="synK">of 10,866 LC10a synapses changed by training</div></div>
+        </div>
+        <div class="chart">
+          <span class="label">Fly's returns per 10 balls</span>
+          <svg id="curve" role="img" aria-label="Bar chart of the fly's return rate for each block of 10 balls"></svg>
+          <div class="tip" id="curveTip" hidden></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div>
+      <h2>How the fly plays</h2>
+      <p>Each paddle movement is the end of a chain of spikes through real wiring. The chain below is the fly's visual pursuit pathway, the one males use to chase a moving female during courtship.</p>
+      <p>Watch how it plays. While the ball is roughly in front, the fly holds still. Once the ball drifts more than about 40° to one side, which happens late in its approach, the fly swings toward it. That style comes straight out of the wiring: the central relay barely reaches the steering neurons, and the peripheral relay drives them hard.</p>
+      <div class="path">
+        <div class="stage">
+          <span class="step">1 · EYES</span>
+          <span class="what"><span class="dot" style="background:var(--role-lc)"></span>LC10a</span>
+          <span class="n">234</span>
+          <p>Visual projection neurons that respond to small moving objects. The ball excites the ones whose receptive fields it falls in, more of them as it gets closer and bigger.</p>
+        </div>
+        <div class="stage">
+          <span class="step">2 · RELAY</span>
+          <span class="what"><span class="dot" style="background:var(--role-aotu)"></span>AOTU019 · AOTU025</span>
+          <span class="n">4</span>
+          <p>Two parallel pursuit pathways in the anterior optic tubercle, one for the centre of view and one for the periphery.</p>
+        </div>
+        <div class="stage">
+          <span class="step">3 · NETWORK</span>
+          <span class="what"><span class="dot" style="background:var(--role-other)"></span>everything in reach</span>
+          <span class="n">1,128</span>
+          <p>Every other neuron this input can make fire, excitatory and inhibitory, simulated spike by spike.</p>
+        </div>
+        <div class="stage">
+          <span class="step">4 · STEERING</span>
+          <span class="what"><span class="dot" style="background:var(--role-dn)"></span>DNa02 · DNa01</span>
+          <span class="n">4</span>
+          <p>Descending neurons whose right-minus-left difference predicts turning in walking flies.</p>
+        </div>
+        <div class="stage">
+          <span class="step">5 · PADDLE</span>
+          <span class="what">turn → speed</span>
+          <span class="n">0.045</span>
+          <p>Paddle speed in field widths per second, per spike/s of right-minus-left steering. Nothing else moves it.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="two">
+      <div>
+        <h3>Taken from the data</h3>
+        <ul>
+          <li>Which neuron connects to which, and with how many synapses (FlyWire release 783).</li>
+          <li>Whether each connection excites or inhibits, from predicted neurotransmitters.</li>
+          <li>The cell types and the pursuit pathway LC10a → AOTU019/AOTU025 → DNa02.</li>
+          <li>Where each LC10a looks. Its input neurons place it on the eye's map, and its preference for AOTU019 (central view) over AOTU025 (periphery) orients that map. The two agree at <span class="num">r = 0.90</span> (right eye) and <span class="num">0.93</span> (left eye).</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Our modelling choices</h3>
+        <ul>
+          <li>Every neuron is the same leaky integrate-and-fire unit, with the parameters of Shiu et al. 2024.</li>
+          <li>The ball drives LC10a through Gaussian receptive fields 16° wide. Each eye is assumed to see from 15° across the midline to 150° to its side.</li>
+          <li>The steering-to-paddle gain and the 25 ms smoothing of steering rates.</li>
+          <li>The learning rule and which synapses may change.</li>
+          <li>Arousal is an input gain. In courting males, P1 neurons raise LC10a gain, but P1 is male-specific and this is a female brain.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div>
+      <h2>How training works</h2>
+      <p>The 10,866 synapses that LC10a neurons make onto the rest of the circuit can change. Each keeps an eligibility trace, a fading record (time constant 0.8 s) of moments when the neurons on both sides of it fired together. Dopamine turns that record into change: sugar strengthens recently active synapses and heat weakens them, up to three times or down to zero their wired strength. This three-factor rule is how the fly's mushroom body learns. Applying it to the pursuit pathway is our assumption.</p>
+      <p>Rally reward sounds like the obvious way to teach Pong, and it barely works. A miss is usually a turn that came too late, and weakening the synapses that were active makes the next turn weaker still. The coach gives feedback every 10 ms instead, the way heat was applied in the classic flight-simulator experiments where tethered flies learned to steer. In our tests, two minutes of coaching took a naive fly from 36% of balls returned to 84%, as good as a courting fly (80%). We measured each over three five-minute runs, with learning switched off for the trained fly.</p>
+    </div>
+
+    <div class="checks">
+      <h2>Checks we ran</h2>
+      <ul>
+        <li><b>Simulator vs the published model.</b> Stimulating sugar-sensing neurons, our firing rates match the original Brian2 model at <span class="num">r = 0.999</span>, mean difference <span class="num">0.6</span> spikes/s. To get there we had to copy one Brian2 detail: input that arrives during a neuron's 2.2 ms refractory period is discarded.</li>
+        <li><b>Sub-circuit vs the whole brain.</b> On six random ball trajectories with random synapse strengths, the 1,370-neuron circuit in this page produced spike trains in the steering neurons identical to a simulation of all 138,639 neurons.</li>
+        <li><b>Pursuit is in the wiring.</b> Within about 30° of straight ahead, the ball drives the central relay AOTU019 while the steering neurons stay nearly silent (under 16 spikes/s). Further out, the peripheral relay AOTU025 joins in and that side's DNa02 fires, reaching 60–110 spikes/s at 90°. The opposite side's DNa02 stayed silent in every condition we tested.</li>
+      </ul>
+    </div>
+
+    <div class="sources">
+      <h2>Sources</h2>
+      <ul>
+        <li><a href="https://research.google/blog/a-connectomics-milestone-mapping-the-complete-male-fruit-fly-brain/" target="_blank" rel="noopener">A connectomics milestone: mapping the complete male fruit fly brain</a> <span class="src">Google Research, 2026. The male CNS can be swapped in with the pipeline in the repository.</span></li>
+        <li><a href="https://www.nature.com/articles/s41586-024-07558-y" target="_blank" rel="noopener">Neuronal wiring diagram of an adult brain</a> <span class="src">Dorkenwald et al., Nature 2024 (FlyWire)</span></li>
+        <li><a href="https://www.nature.com/articles/s41586-024-07686-5" target="_blank" rel="noopener">Whole-brain annotation and multi-connectome cell typing of Drosophila</a> <span class="src">Schlegel et al., Nature 2024</span></li>
+        <li><a href="https://www.nature.com/articles/s41586-024-07763-9" target="_blank" rel="noopener">A Drosophila computational brain model reveals sensorimotor processing</a> <span class="src">Shiu et al., Nature 2024</span></li>
+        <li><a href="https://www.biorxiv.org/content/10.1101/2025.04.23.650240v2" target="_blank" rel="noopener">Specialized parallel pathways for adaptive control of visual object pursuit</a> <span class="src">Collie et al., Neuron 2026</span></li>
+        <li><a href="https://elifesciences.org/articles/102230" target="_blank" rel="noopener">Neural circuit mechanisms for steering control in walking Drosophila</a> <span class="src">Rayshubskiy et al., eLife 2025</span></li>
+        <li><a href="https://www.nature.com/articles/s41586-021-03714-w" target="_blank" rel="noopener">Sexual arousal gates visual processing during Drosophila courtship</a> <span class="src">Hindmarsh Sten et al., Nature 2021</span></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<script src="data/flypong_circuit.js"></script>
+<script>
+(() => {
+"use strict";
+const DATA = window.FLYPONG_CIRCUIT;
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const DEG = 180 / Math.PI;
+
+// ------------------------------------------------------------------ constants
+const CFG = {
+  W: 1, H: 1.4, paddleHalf: 0.09, ballR: 0.03, paddleY: 0.05,
+  speed0: 0.75, speedUp: 1.03, speedMax: 1.4,
+  K: 0.045, vMax: 2.0, tauDn: 25, beta01: 0.5, tickMs: 10, stepsPerTick: 100,
+  playerVMax: 2.4, sigmaRF: 16,
+};
+const LEARN = { tauE: 800, etaCoach: 0.01, etaSparse: 0.01, etaManual: 0.02, wMin: 0, wMax: 3 };
+const CHANCE = 0.24;   // return rate of a motionless paddle (measured offline, 3 x 5 min)
+
+// ------------------------------------------------------------------ RNG
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ------------------------------------------------------------------ spiking brain
+// Leaky integrate-and-fire network with the parameters and Brian2 semantics of Shiu et al. 2024.
+class Brain {
+  constructor(d, seed) {
+    const n = this.n = d.n;
+    const pre = d.edges.pre, post = d.edges.post, w = d.edges.w, E = pre.length;
+    this.indptr = new Int32Array(n + 1);
+    for (let e = 0; e < E; e++) this.indptr[pre[e] + 1]++;
+    for (let i = 0; i < n; i++) this.indptr[i + 1] += this.indptr[i];
+    this.preOf = Int32Array.from(pre);
+    this.indices = Int32Array.from(post);
+    this.w0 = Float32Array.from(w);
+    this.weff = Float32Array.from(w);
+    const p = d.params;
+    this.dt = p.dt;
+    this.am = Math.exp(-p.dt / p.t_mbr);
+    this.as = Math.exp(-p.dt / p.tau);
+    this.c = p.tau / (p.tau - p.t_mbr) * (this.as - this.am);
+    this.thr = p.v_th - p.v_0;
+    this.kick = p.f_poi * p.w_syn;
+    this.D = Math.round(p.t_dly / p.dt);
+    this.R = Math.round(p.t_rfc / p.dt);
+    this.wsyn = p.w_syn;
+    this.stimIdx = Int32Array.from(d.lc10a.i);
+    this.isStim = new Uint8Array(n);
+    for (const i of d.lc10a.i) this.isStim[i] = 1;
+    this.counts = new Int32Array(n);
+    this.spk = new Int32Array(n);
+    this.evHead = new Int32Array(1000);
+    this.evNext = new Int32Array(16384);
+    this.evStim = new Int32Array(16384);
+    this.rnd = mulberry32(seed || 1);
+    this.resetState();
+  }
+  resetState() {
+    this.u = new Float32Array(this.n);
+    this.g = new Float32Array(this.n);
+    this.refUntil = new Float64Array(this.n);
+    this.buf = new Float32Array(this.D * this.n);
+    this.t = 0;
+  }
+  // advance nSteps (0.1 ms each) with constant Poisson rates (Hz) on the LC10a inputs
+  block(nSteps, rates) {
+    const n = this.n, u = this.u, g = this.g, ru = this.refUntil, buf = this.buf, D = this.D, R = this.R;
+    const am = this.am, as = this.as, c = this.c, thr = this.thr, kick = this.kick, wsyn = this.wsyn;
+    const indptr = this.indptr, indices = this.indices, weff = this.weff, isStim = this.isStim;
+    const spk = this.spk, counts = this.counts, stim = this.stimIdx;
+    const head = this.evHead, next = this.evNext, evStim = this.evStim, rnd = this.rnd;
+    counts.fill(0);
+    head.fill(-1, 0, nSteps);
+    // Poisson input: exact per-step Bernoulli trials, sampled by geometric skipping
+    let ne = 0;
+    for (let k = 0; k < stim.length; k++) {
+      const pr = rates[k] * this.dt * 1e-3;
+      if (!(pr > 1e-12)) continue;               // far-off neurons: no events (and avoid log(1) = 0)
+      const lq = Math.log1p(-pr);
+      let s = Math.floor(Math.log(1 - rnd()) / lq);
+      while (s < nSteps && ne < evStim.length) {
+        evStim[ne] = stim[k]; next[ne] = head[s]; head[s] = ne; ne++;
+        s += 1 + Math.floor(Math.log(1 - rnd()) / lq);
+      }
+    }
+    let t = this.t;
+    for (let st = 0; st < nSteps; st++, t++) {
+      // 1. integrate (exact solution over dt); frozen while refractory
+      for (let i = 0; i < n; i++) {
+        if (t < ru[i]) continue;
+        const gi = g[i], ui = u[i];
+        if (gi !== 0 || ui !== 0) { u[i] = ui * am + gi * c; g[i] = gi * as; }
+      }
+      // 2. threshold
+      let ns = 0;
+      for (let i = 0; i < n; i++) {
+        if (u[i] > thr && t >= ru[i]) { spk[ns++] = i; ru[i] = t + (isStim[i] ? 1 : R); }
+      }
+      // 3. deliver spikes sent 1.8 ms ago (dropped if the target is refractory), Poisson kicks
+      const off = (t % D) * n;
+      for (let i = 0; i < n; i++) {
+        const x = buf[off + i];
+        if (x !== 0) { if (t >= ru[i]) g[i] += x; buf[off + i] = 0; }
+      }
+      for (let e = head[st]; e !== -1; e = next[e]) u[evStim[e]] += kick;
+      // 4. reset spiking neurons and schedule their output
+      for (let q = 0; q < ns; q++) {
+        const i = spk[q];
+        u[i] = 0; g[i] = 0; counts[i]++;
+        for (let e = indptr[i], E = indptr[i + 1]; e < E; e++) buf[off + indices[e]] += weff[e] * wsyn;
+      }
+    }
+    this.t = t;
+  }
+}
+
+// ------------------------------------------------------------------ eyes
+class Retina {
+  constructor(d) {
+    const L = d.lc10a;
+    this.n = L.i.length;
+    this.az = Float64Array.from(L.azimuth, (v) => v / DEG);
+    this.el = Float64Array.from(L.elevation);
+    this.azDeg = Float64Array.from(L.azimuth);
+    this.cosEl = Float64Array.from(L.elevation, (v) => Math.cos(v / DEG));
+    this.right = Uint8Array.from(L.side, (s) => (s === "right" ? 1 : 0));
+    this.rates = new Float64Array(this.n);
+  }
+  // ball at elevation 0 (Pong is flat), azimuth in degrees (+ = fly's right)
+  update(azDeg, sizeDeg, gain) {
+    const b = azDeg / DEG, s2 = CFG.sigmaRF * CFG.sigmaRF + (sizeDeg / 2) * (sizeDeg / 2);
+    for (let k = 0; k < this.n; k++) {
+      const cosd = clamp(this.cosEl[k] * Math.cos(this.az[k] - b), -1, 1);
+      const dd = Math.acos(cosd) * DEG;
+      this.rates[k] = gain * Math.exp(-(dd * dd) / (2 * s2));
+    }
+    return this.rates;
+  }
+}
+
+// ------------------------------------------------------------------ dopamine-gated plasticity
+class Plasticity {
+  constructor(brain) {
+    this.b = brain;
+    const idx = [];
+    for (let i = 0; i < brain.n; i++) if (brain.isStim[i]) for (let e = brain.indptr[i]; e < brain.indptr[i + 1]; e++) idx.push(e);
+    this.e = Int32Array.from(idx);
+    this.pre = Int32Array.from(idx, (e) => brain.preOf[e]);
+    this.post = Int32Array.from(idx, (e) => brain.indices[e]);
+    this.mult = new Float32Array(idx.length).fill(1);
+    this.elig = new Float32Array(idx.length);
+    this.P = idx.length;
+  }
+  frame(counts, dtMs) {
+    const dec = Math.exp(-dtMs / LEARN.tauE), elig = this.elig, pre = this.pre, post = this.post;
+    for (let j = 0; j < this.P; j++) {
+      let v = elig[j] * dec;
+      const cp = counts[pre[j]];
+      if (cp) { const cq = counts[post[j]]; if (cq) v += cp * cq; }
+      elig[j] = v < 1e-4 ? 0 : v;
+    }
+  }
+  apply(da, eta) {
+    const b = this.b, elig = this.elig, mult = this.mult, e = this.e;
+    for (let j = 0; j < this.P; j++) {
+      const el = elig[j];
+      if (el === 0) continue;
+      const m = clamp(mult[j] + eta * da * el, LEARN.wMin, LEARN.wMax);
+      mult[j] = m;
+      b.weff[e[j]] = b.w0[e[j]] * m;
+    }
+  }
+  reset() {
+    this.mult.fill(1); this.elig.fill(0);
+    for (let j = 0; j < this.P; j++) this.b.weff[this.e[j]] = this.b.w0[this.e[j]];
+  }
+  load(arr) {
+    if (!arr || arr.length !== this.P) return;
+    for (let j = 0; j < this.P; j++) { this.mult[j] = arr[j]; this.b.weff[this.e[j]] = this.b.w0[this.e[j]] * arr[j]; }
+  }
+  changed() {
+    let up = 0, down = 0;
+    for (let j = 0; j < this.P; j++) { const m = this.mult[j]; if (m > 1.05) up++; else if (m < 0.95) down++; }
+    return { up, down };
+  }
+}
+
+// ------------------------------------------------------------------ game
+const brain = new Brain(DATA, 7);
+const retina = new Retina(DATA);
+const plast = new Plasticity(brain);
+const S = DATA.steer;
+
+const state = {
+  mode: "practice", running: true, gain: 120, coach: false, sparse: false,
+  ball: { x: 0.5, y: 0.2, vx: 0, vy: 1, speed: CFG.speed0 },
+  fly: { x: 0.5, v: 0 }, you: { x: 0.5, target: null },
+  dn: new Float64Array(4), turn: 0, view: { az: 0, size: 2 },
+  score: { you: 0, fly: 0 }, faced: [], blocks: [], blockStartNaive: [],
+  da: 0, rbar: 0, keys: { l: false, r: false }, ff: 0, simRate: 1,
+  vizCounts: new Float32Array(DATA.n),
+};
+const rng = mulberry32(12345);
+
+function serve(towards) {
+  const b = state.ball;
+  b.speed = CFG.speed0;
+  const ang = (rng() * 2 - 1) * 0.5;
+  if (state.mode === "practice" || towards === "fly") {
+    b.x = 0.25 + rng() * 0.5; b.y = state.mode === "practice" ? 0.1 : CFG.H / 2;
+    b.vx = Math.sin(ang); b.vy = Math.cos(ang);
+  } else {
+    b.x = 0.25 + rng() * 0.5; b.y = CFG.H / 2;
+    b.vx = Math.sin(ang); b.vy = -Math.cos(ang);
+  }
+}
+
+function recordFly(returned) {
+  state.faced.push(returned ? 1 : 0);
+  if (state.faced.length % 10 === 0) {
+    const last = state.faced.slice(-10);
+    state.blocks.push({ r: last.reduce((a, b) => a + b, 0), gain: state.gain, trained: state.coach || state.sparse });
+    if (state.blocks.length > 60) state.blocks.shift();
+    drawCurve();
+  }
+  if (state.sparse) {
+    const r = returned ? 1 : -1;
+    const da = r - state.rbar;
+    state.rbar += 0.1 * (r - state.rbar);
+    plast.apply(da, LEARN.etaSparse);
+    pulseDA(da);
+  }
+}
+
+function tick() {
+  const b = state.ball, fly = state.fly, dtS = CFG.tickMs / 1000;
+  // what the fly sees: the ball's direction and apparent size, relative to its heading (up)
+  const dx = b.x - fly.x, dy = (CFG.H - 0.02) - b.y;
+  const az = Math.atan2(dx, Math.max(dy, 1e-3)) * DEG;
+  const dist = Math.hypot(dx, dy);
+  const size = 2 * Math.atan(CFG.ballR / Math.max(dist, 1e-3)) * DEG;
+  state.view.az = az; state.view.size = size;
+  const rates = retina.update(az, size, state.gain);
+  brain.block(CFG.stepsPerTick, rates);
+  const c = brain.counts;
+  const viz = state.vizCounts;
+  for (let i = 0; i < brain.n; i++) if (c[i]) viz[i] += c[i];
+  // steering readout: right minus left
+  const k = 1000 / CFG.tickMs, a = Math.exp(-CFG.tickMs / CFG.tauDn), dn = state.dn;
+  const raw = [c[S.DNa02_L] * k, c[S.DNa02_R] * k, c[S.DNa01_L] * k, c[S.DNa01_R] * k];
+  for (let j = 0; j < 4; j++) dn[j] = a * dn[j] + (1 - a) * raw[j];
+  state.turn = (dn[1] - dn[0]) + CFG.beta01 * (dn[3] - dn[2]);
+  fly.v = clamp(CFG.K * state.turn, -CFG.vMax, CFG.vMax);
+  fly.x = clamp(fly.x + fly.v * dtS, CFG.paddleHalf, CFG.W - CFG.paddleHalf);
+  // learning
+  plast.frame(c, CFG.tickMs);
+  if (state.coach) {
+    const toward = Math.sign(b.x - fly.x) * fly.v / CFG.vMax;
+    plast.apply(toward, LEARN.etaCoach);
+    state.da = 0.85 * state.da + 0.15 * toward;
+  } else {
+    state.da *= 0.9;
+  }
+  // your paddle
+  if (state.mode === "play") {
+    const you = state.you;
+    let vx = 0;
+    if (state.keys.l || state.keys.r) vx = (state.keys.r - state.keys.l) * CFG.playerVMax;
+    else if (you.target !== null) vx = clamp((you.target - you.x) / dtS, -CFG.playerVMax, CFG.playerVMax);
+    you.x = clamp(you.x + vx * dtS, CFG.paddleHalf, CFG.W - CFG.paddleHalf);
+  }
+  // ball
+  const sp = b.speed * CFG.H;
+  b.x += b.vx * sp * dtS; b.y += b.vy * sp * dtS;
+  if (b.x < CFG.ballR) { b.x = CFG.ballR; b.vx = Math.abs(b.vx); }
+  if (b.x > CFG.W - CFG.ballR) { b.x = CFG.W - CFG.ballR; b.vx = -Math.abs(b.vx); }
+  if (b.vy < 0 && b.y <= CFG.paddleY) {
+    if (state.mode === "practice") {
+      const ang = (rng() * 2 - 1) * 0.7;
+      b.vx = Math.sin(ang); b.vy = Math.cos(ang); b.y = CFG.paddleY;
+    } else if (Math.abs(b.x - state.you.x) <= CFG.paddleHalf + CFG.ballR) {
+      const ang = 0.6 * (b.x - state.you.x) / CFG.paddleHalf;
+      b.vx = Math.sin(ang); b.vy = Math.cos(ang); b.y = CFG.paddleY;
+      b.speed = Math.min(b.speed * CFG.speedUp, CFG.speedMax);
+    } else {
+      state.score.fly++; updateScore(); serve("you");
+    }
+  }
+  if (b.vy > 0 && b.y >= CFG.H - CFG.paddleY) {
+    if (Math.abs(b.x - fly.x) <= CFG.paddleHalf + CFG.ballR) {
+      const ang = 0.6 * (b.x - fly.x) / CFG.paddleHalf;
+      b.vx = Math.sin(ang); b.vy = -Math.cos(ang); b.y = CFG.H - CFG.paddleY;
+      b.speed = Math.min(b.speed * CFG.speedUp, CFG.speedMax);
+      recordFly(true);
+    } else {
+      recordFly(false);
+      if (state.mode === "play") { state.score.you++; updateScore(); serve("fly"); }
+      else serve("fly");
+    }
+  }
+}
+
+// ------------------------------------------------------------------ rendering: LED arena
+const arena = $("arena"), actx = arena.getContext("2d");
+const LED = { cols: 44, rows: 62, level: null, bg: null, cell: 10, dpr: 1 };
+LED.level = new Float32Array(LED.cols * LED.rows);
+function sizeArena() {
+  const r = arena.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  arena.width = Math.round(r.width * dpr); arena.height = Math.round(r.width * 1.4 * dpr);
+  LED.dpr = dpr; LED.cell = arena.width / LED.cols;
+  const bg = document.createElement("canvas");
+  bg.width = arena.width; bg.height = arena.height;
+  const g = bg.getContext("2d");
+  g.fillStyle = "#070b09"; g.fillRect(0, 0, bg.width, bg.height);
+  g.fillStyle = "#14211a";
+  const rad = LED.cell * 0.3;
+  for (let y = 0; y < LED.rows; y++) for (let x = 0; x < LED.cols; x++) {
+    g.beginPath(); g.arc((x + 0.5) * LED.cell, (y + 0.5) * LED.cell * (arena.height / LED.rows) / LED.cell, rad, 0, 7); g.fill();
+  }
+  LED.bg = bg;
+}
+function lightRect(x0, x1, y0, y1, lvl) {
+  const cw = CFG.W / LED.cols, ch = CFG.H / LED.rows;
+  for (let r = Math.max(0, Math.floor(y0 / ch)); r <= Math.min(LED.rows - 1, Math.floor(y1 / ch)); r++)
+    for (let q = Math.max(0, Math.floor(x0 / cw)); q <= Math.min(LED.cols - 1, Math.floor(x1 / cw)); q++) {
+      const cx = (q + 0.5) * cw;
+      if (cx >= x0 && cx <= x1) { const i = r * LED.cols + q; LED.level[i] = Math.max(LED.level[i], lvl); }
+    }
+}
+function drawArena(dtMs) {
+  const lv = LED.level, dec = Math.exp(-dtMs / 55);
+  for (let i = 0; i < lv.length; i++) lv[i] *= dec;
+  const cw = CFG.W / LED.cols, ch = CFG.H / LED.rows;
+  // ball
+  const b = state.ball, R = CFG.ballR * 1.25;
+  for (let r = Math.max(0, Math.floor((b.y - R) / ch) - 1); r <= Math.min(LED.rows - 1, Math.floor((b.y + R) / ch) + 1); r++)
+    for (let q = Math.max(0, Math.floor((b.x - R) / cw) - 1); q <= Math.min(LED.cols - 1, Math.floor((b.x + R) / cw) + 1); q++) {
+      const d = Math.hypot((q + 0.5) * cw - b.x, (r + 0.5) * ch - b.y);
+      const l = clamp(1 - (d - CFG.ballR) / cw, 0, 1);
+      const i = r * LED.cols + q; if (l > lv[i]) lv[i] = l;
+    }
+  // paddles
+  lightRect(state.fly.x - CFG.paddleHalf, state.fly.x + CFG.paddleHalf, CFG.H - CFG.paddleY - ch * 0.4, CFG.H - CFG.paddleY + ch * 0.9, 1);
+  if (state.mode === "play") lightRect(state.you.x - CFG.paddleHalf, state.you.x + CFG.paddleHalf, CFG.paddleY - ch * 0.9, CFG.paddleY + ch * 0.4, 0.85);
+  else lightRect(0, CFG.W, CFG.paddleY - ch * 0.9, CFG.paddleY - ch * 0.2, 0.28);
+  // centre line
+  for (let q = 1; q < LED.cols; q += 3) { const i = Math.floor(LED.rows / 2) * LED.cols + q; lv[i] = Math.max(lv[i], 0.12); }
+
+  const W = arena.width, H = arena.height, cellX = W / LED.cols, cellY = H / LED.rows;
+  actx.drawImage(LED.bg, 0, 0);
+  const rad = Math.min(cellX, cellY) * 0.34;
+  actx.fillStyle = "#a6ff6e";
+  for (let r = 0; r < LED.rows; r++) for (let q = 0; q < LED.cols; q++) {
+    const l = lv[r * LED.cols + q];
+    if (l < 0.03) continue;
+    const x = (q + 0.5) * cellX, y = (r + 0.5) * cellY;
+    actx.globalAlpha = l * 0.22; actx.beginPath(); actx.arc(x, y, rad * 2.1, 0, 7); actx.fill();
+    actx.globalAlpha = Math.min(1, 0.25 + l); actx.beginPath(); actx.arc(x, y, rad, 0, 7); actx.fill();
+  }
+  actx.globalAlpha = 1;
+  // fly marker under its paddle: a small wing glyph
+  const fx = state.fly.x / CFG.W * W, fy = (CFG.H - CFG.paddleY) / CFG.H * H + cellY * 1.6;
+  actx.fillStyle = "#a6ff6e"; actx.globalAlpha = 0.9;
+  actx.beginPath(); actx.ellipse(fx, fy, cellX * 0.45, cellY * 0.75, 0, 0, 7); actx.fill();
+  actx.globalAlpha = 0.45;
+  actx.beginPath(); actx.ellipse(fx - cellX * 0.9, fy + cellY * 0.2, cellX * 0.8, cellY * 0.38, -0.5, 0, 7); actx.fill();
+  actx.beginPath(); actx.ellipse(fx + cellX * 0.9, fy + cellY * 0.2, cellX * 0.8, cellY * 0.38, 0.5, 0, 7); actx.fill();
+  actx.globalAlpha = 1;
+}
+
+// ------------------------------------------------------------------ rendering: brain
+const brainC = $("brain"), bctx = brainC.getContext("2d");
+const SIL = DATA.silhouette;
+const NEU = DATA.neurons;
+const ROLE = NEU.role;
+const trace = new Float32Array(DATA.n);
+let brainScale = null, silCanvas = null;
+const roleStyle = {
+  lc10a: { c: "#46a13c", r: 1.7, base: 0.55 },
+  aotu: { c: "#3a8fe0", r: 3.6, base: 0.9 },
+  steer: { c: "#e2559c", r: 4.2, base: 0.95 },
+  dn: { c: "#56625b", r: 1.5, base: 0.5 },
+  other: { c: "#56625b", r: 1.3, base: 0.42 },
+};
+function sizeBrain() {
+  const r = brainC.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const aspect = (SIL.x1 - SIL.x0) / (SIL.y1 - SIL.y0);
+  const h = r.width / aspect;
+  brainC.style.height = h + "px";
+  brainC.width = Math.round(r.width * dpr); brainC.height = Math.round(h * dpr);
+  brainScale = { dpr, sx: brainC.width / (SIL.x1 - SIL.x0), sy: brainC.height / (SIL.y1 - SIL.y0) };
+  // silhouette from the density of all 139k neuron anchor points
+  const off = document.createElement("canvas"); off.width = SIL.nx; off.height = SIL.ny;
+  const og = off.getContext("2d"), img = og.createImageData(SIL.nx, SIL.ny);
+  for (let i = 0; i < SIL.v.length; i++) {
+    const v = SIL.v[i] / 255;
+    img.data[i * 4] = 90; img.data[i * 4 + 1] = 118; img.data[i * 4 + 2] = 100; img.data[i * 4 + 3] = Math.round(Math.pow(v, 1.4) * 70);
+  }
+  og.putImageData(img, 0, 0);
+  silCanvas = off;
+}
+function bx(x) { return (x - SIL.x0) * brainScale.sx; }
+function by(y) { return (y - SIL.y0) * brainScale.sy; }
+const labelSpots = (() => {
+  const pick = (f) => { let sx = 0, sy = 0, n = 0; for (let i = 0; i < DATA.n; i++) if (f(i)) { sx += NEU.x[i]; sy += NEU.y[i]; n++; } return [sx / n, sy / n]; };
+  return [
+    { t: "LC10a · left eye", p: pick((i) => ROLE[i] === "lc10a" && NEU.side[i] === "left"), dy: 30 },
+    { t: "LC10a · right eye", p: pick((i) => ROLE[i] === "lc10a" && NEU.side[i] === "right"), dy: 30 },
+    { t: "DNa02", p: [NEU.x[S.DNa02_L], NEU.y[S.DNa02_L]], dy: -14 },
+    { t: "DNa02", p: [NEU.x[S.DNa02_R], NEU.y[S.DNa02_R]], dy: -14 },
+  ];
+})();
+function drawBrain(dtMs) {
+  if (!brainScale) return;
+  const W = brainC.width, H = brainC.height, dpr = brainScale.dpr;
+  const dec = Math.exp(-dtMs / 90), viz = state.vizCounts;
+  let firing = 0;
+  for (let i = 0; i < DATA.n; i++) { trace[i] = trace[i] * dec + viz[i] * 0.55; viz[i] = 0; if (trace[i] > 0.25) firing++; }
+  bctx.fillStyle = "#070b09"; bctx.fillRect(0, 0, W, H);
+  bctx.imageSmoothingEnabled = true;
+  bctx.drawImage(silCanvas, 0, 0, W, H);
+  // resting dots
+  for (const role of ["other", "dn", "lc10a", "aotu", "steer"]) {
+    const st = roleStyle[role];
+    bctx.fillStyle = st.c;
+    bctx.globalAlpha = st.base;
+    bctx.beginPath();
+    for (let i = 0; i < DATA.n; i++) {
+      if (ROLE[i] !== role) continue;
+      const x = bx(NEU.x[i]), y = by(NEU.y[i]), r = st.r * dpr;
+      bctx.moveTo(x + r, y); bctx.arc(x, y, r, 0, 7);
+    }
+    bctx.fill();
+  }
+  // active dots
+  for (let i = 0; i < DATA.n; i++) {
+    const tr = trace[i];
+    if (tr < 0.05) continue;
+    const st = roleStyle[ROLE[i]], x = bx(NEU.x[i]), y = by(NEU.y[i]);
+    const a = Math.min(1, tr);
+    const col = ROLE[i] === "other" || ROLE[i] === "dn" ? "#d9e6dc" : st.c;
+    bctx.fillStyle = col; bctx.globalAlpha = a * 0.25;
+    bctx.beginPath(); bctx.arc(x, y, (st.r + 4) * dpr, 0, 7); bctx.fill();
+    bctx.globalAlpha = Math.min(1, 0.4 + a);
+    bctx.beginPath(); bctx.arc(x, y, (st.r + 0.6) * dpr, 0, 7); bctx.fill();
+  }
+  bctx.globalAlpha = 1;
+  // labels
+  bctx.font = `${11 * dpr}px "IBM Plex Mono", ui-monospace, monospace`;
+  bctx.textAlign = "center"; bctx.fillStyle = "#8a988f";
+  for (const l of labelSpots) bctx.fillText(l.t, bx(l.p[0]), by(l.p[1]) + l.dy * dpr);
+  $("brainStatus").textContent = `${firing} of ${DATA.n.toLocaleString()} neurons firing`;
+}
+brainC.addEventListener("pointermove", (ev) => {
+  const r = brainC.getBoundingClientRect(), dpr = brainScale.dpr;
+  const mx = (ev.clientX - r.left) * dpr, my = (ev.clientY - r.top) * dpr;
+  let best = -1, bd = (9 * dpr) ** 2;
+  for (let i = 0; i < DATA.n; i++) {
+    const d = (bx(NEU.x[i]) - mx) ** 2 + (by(NEU.y[i]) - my) ** 2;
+    if (d < bd) { bd = d; best = i; }
+  }
+  const tip = $("brainTip");
+  if (best < 0) { tip.hidden = true; return; }
+  const kind = { lc10a: "eye neuron", aotu: "pursuit relay", steer: "steering neuron", dn: "descending neuron", other: NEU.cls[best] + " neuron" }[ROLE[best]];
+  tip.innerHTML = `<b>${NEU.type[best]}</b> · ${NEU.side[best]} · ${kind}<br>${NEU.nt[best]} · FlyWire ${NEU.root_id[best]}`;
+  const wrap = brainC.parentElement.getBoundingClientRect();
+  tip.style.left = (ev.clientX - wrap.left) + "px"; tip.style.top = (ev.clientY - wrap.top) + "px";
+  tip.hidden = false;
+});
+brainC.addEventListener("pointerleave", () => { $("brainTip").hidden = true; });
+
+// ------------------------------------------------------------------ rendering: eyes
+const eyeCanvases = [$("eyeL"), $("eyeR")];
+function sizeEyes() {
+  for (const c of eyeCanvases) {
+    const r = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
+  }
+}
+function drawEyes() {
+  const rates = retina.rates, gmax = 150;
+  eyeCanvases.forEach((c, side) => {
+    const g = c.getContext("2d"), W = c.width, H = c.height;
+    const azMin = side ? -15 : -150, azMax = side ? 150 : 15;
+    const X = (az) => (az - azMin) / (azMax - azMin) * W, Y = (el) => (1 - (el + 60) / 130) * H;
+    g.fillStyle = "#070b09"; g.fillRect(0, 0, W, H);
+    g.strokeStyle = "#223027"; g.lineWidth = 1; g.setLineDash([3, 3]);
+    g.beginPath(); g.moveTo(0, Y(0)); g.lineTo(W, Y(0)); g.moveTo(X(0), 0); g.lineTo(X(0), H); g.stroke(); g.setLineDash([]);
+    const rr = Math.max(2, W / 60);
+    for (let k = 0; k < retina.n; k++) {
+      if (retina.right[k] !== side) continue;
+      const x = X(retina.azDeg[k]), y = Y(retina.el[k]), a = rates[k] / gmax;
+      g.globalAlpha = 1; g.fillStyle = "#14211a"; g.beginPath(); g.arc(x, y, rr, 0, 7); g.fill();
+      if (a > 0.02) { g.globalAlpha = Math.min(1, a * 1.3); g.fillStyle = "#a6ff6e"; g.beginPath(); g.arc(x, y, rr * 1.15, 0, 7); g.fill(); }
+    }
+    g.globalAlpha = 1;
+    const az = state.view.az;
+    if (az >= azMin && az <= azMax) {
+      g.strokeStyle = "#d8e2da"; g.lineWidth = Math.max(1, W / 220);
+      g.beginPath(); g.arc(X(az), Y(0), Math.max(4, state.view.size / (azMax - azMin) * W / 2 + 3), 0, 7); g.stroke();
+    }
+    g.fillStyle = "#8a988f"; g.font = `${Math.round(W / 22)}px "IBM Plex Mono", monospace`;
+    g.textAlign = side ? "left" : "right";
+    g.fillText("front", side ? X(0) + 4 : X(0) - 4, H - 5);
+  });
+  $("ballRead").textContent = `ball at ${state.view.az >= 0 ? "+" : ""}${state.view.az.toFixed(0)}° · ${state.view.size.toFixed(0)}° wide`;
+}
+
+// ------------------------------------------------------------------ rendering: meters, stats
+function updateMeters() {
+  const dn = state.dn, full = 120;
+  $("m02L").style.width = Math.min(100, dn[0] / full * 100) + "%";
+  $("m02R").style.width = Math.min(100, dn[1] / full * 100) + "%";
+  $("m01L").style.width = Math.min(100, dn[2] / full * 100) + "%";
+  $("m01R").style.width = Math.min(100, dn[3] / full * 100) + "%";
+  const L = dn[0] + CFG.beta01 * dn[2], R = dn[1] + CFG.beta01 * dn[3];
+  $("rateL").textContent = `L ${L.toFixed(0)}`; $("rateR").textContent = `R ${R.toFixed(0)}`;
+  $("turnRead").textContent = `turn ${state.turn >= 0 ? "+" : ""}${state.turn.toFixed(0)}`;
+  $("needle").style.left = (50 + clamp(state.turn / 100, -1, 1) * 48) + "%";
+  const da = clamp(state.da * 2.5, -1, 1), f = $("daFill");
+  f.style.width = Math.abs(da) * 50 + "%";
+  f.style.left = da >= 0 ? "50%" : (50 - Math.abs(da) * 50) + "%";
+  f.style.background = da >= 0 ? "var(--sugar)" : "var(--heat)";
+}
+function updateStats() {
+  const f = state.faced, last = f.slice(-20);
+  $("retRecent").innerHTML = last.length ? `${Math.round(100 * last.reduce((a, b) => a + b, 0) / last.length)}%<small>${last.length < 20 ? last.length + " balls so far" : ""}</small>` : "–";
+  const all = f.reduce((a, b) => a + b, 0);
+  $("retRecentK").textContent = f.length ? `fly returns, last ${Math.min(20, f.length)} balls · ${all} of ${f.length} overall` : "fly returns, last 20 balls";
+  const ch = plast.changed();
+  $("synChanged").textContent = (ch.up + ch.down).toLocaleString();
+  $("synK").textContent = `of ${plast.P.toLocaleString()} LC10a synapses changed by training · ${ch.up.toLocaleString()} stronger, ${ch.down.toLocaleString()} weaker`;
+}
+function updateScore() {
+  $("scoreYou").textContent = String(state.score.you).padStart(2, "0");
+  $("scoreFly").textContent = String(state.score.fly).padStart(2, "0");
+}
+let pulseT = 0;
+function pulseDA(v) { state.da = clamp(state.da + v * 0.4, -1, 1); pulseT = 1; }
+
+const curve = $("curve");
+function drawCurve() {
+  const r = curve.getBoundingClientRect(), W = Math.max(200, r.width), H = 170;
+  const m = { l: 34, r: 8, t: 10, b: 22 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const blocks = state.blocks, n = Math.max(blocks.length, 12);
+  const bw = iw / n, y = (v) => m.t + ih * (1 - v);
+  let s = `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}"/>`;
+  for (const v of [0.5, 1]) s += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" opacity=".6"/>`;
+  for (const v of [0, 0.5, 1]) s += `<text x="${m.l - 6}" y="${y(v) + 3.5}" text-anchor="end">${v * 100}%</text>`;
+  blocks.forEach((bk, i) => {
+    const v = bk.r / 10, x = m.l + i * bw + 1, w = Math.max(2, bw - 2), top = y(v), h = Math.max(0, y(0) - top);
+    const rr = Math.min(3, w / 2, h);
+    s += `<path class="bar${bk.trained ? "" : " naive"}" d="M${x},${y(0)} V${top + rr} Q${x},${top} ${x + rr},${top} H${x + w - rr} Q${x + w},${top} ${x + w},${top + rr} V${y(0)} Z"/>`;
+    s += `<rect class="hit" data-i="${i}" x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${ih}"/>`;
+  });
+  s += `<line class="base" x1="${m.l}" x2="${W - m.r}" y1="${y(CHANCE)}" y2="${y(CHANCE)}"/>`;
+  s += `<text x="${W - m.r}" y="${y(CHANCE) - 5}" text-anchor="end">motionless paddle ${Math.round(CHANCE * 100)}%</text>`;
+  const first = state.faced.length - blocks.length * 10;
+  s += `<text x="${m.l}" y="${H - 4}">${blocks.length ? `balls ${first + 1}–${state.faced.length}` : "a bar appears after every 10 balls the fly faces"}</text>`;
+  curve.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  curve.innerHTML = s;
+}
+curve.addEventListener("pointermove", (ev) => {
+  const t = ev.target, tip = $("curveTip");
+  if (!(t instanceof SVGRectElement) || !t.dataset.i) { tip.hidden = true; return; }
+  const i = +t.dataset.i, bk = state.blocks[i];
+  const first = state.faced.length - state.blocks.length * 10 + i * 10 + 1;
+  tip.innerHTML = `balls ${first}–${first + 9}: <b>${bk.r} of 10</b> returned<br>eye gain ${bk.gain}/s · ${bk.trained ? "training on" : "no training"}`;
+  const wrap = curve.parentElement.getBoundingClientRect();
+  tip.style.left = (ev.clientX - wrap.left) + "px"; tip.style.top = (ev.clientY - wrap.top) + "px";
+  tip.hidden = false;
+});
+curve.addEventListener("pointerleave", () => { $("curveTip").hidden = true; });
+
+// ------------------------------------------------------------------ controls
+function setMode(mode) {
+  state.mode = mode;
+  $("modePlay").setAttribute("aria-pressed", mode === "play");
+  $("modePractice").setAttribute("aria-pressed", mode === "practice");
+  $("modeCaption").textContent = mode === "play" ? "YOU (TOP) VS THE FLY (BOTTOM)" : "FLY PRACTISES AGAINST A WALL";
+  $("hint").textContent = mode === "play"
+    ? "Move the pointer or drag over the arena to steer your paddle. Arrow keys or A/D work too."
+    : "Click the arena or press ← → to take the top paddle and play against the fly.";
+  $("practiceFast").disabled = false;
+  state.you.x = 0.5; state.you.target = null;
+  serve("fly");
+}
+function setGain(v) {
+  state.gain = +v; $("gain").value = v; $("gainVal").textContent = `${v} spikes/s`;
+  $("presetNaive").setAttribute("aria-pressed", +v === 45);
+  $("presetCourting").setAttribute("aria-pressed", +v === 120);
+}
+$("modePlay").onclick = () => setMode("play");
+$("modePractice").onclick = () => setMode("practice");
+$("gain").oninput = (e) => setGain(e.target.value);
+$("presetNaive").onclick = () => { setGain(45); plast.reset(); updateStats(); };
+$("presetCourting").onclick = () => setGain(120);
+$("coach").onchange = (e) => { state.coach = e.target.checked; };
+$("sparse").onchange = (e) => { state.sparse = e.target.checked; };
+$("giveSugar").onclick = () => { plast.apply(1, LEARN.etaManual); pulseDA(1); updateStats(); };
+$("giveHeat").onclick = () => { plast.apply(-1, LEARN.etaManual); pulseDA(-1); updateStats(); };
+$("resetSyn").onclick = () => { plast.reset(); updateStats(); };
+$("resetScore").onclick = () => { state.score.you = state.score.fly = 0; state.faced = []; state.blocks = []; updateScore(); updateStats(); drawCurve(); };
+$("pauseBtn").onclick = () => { state.running = !state.running; $("pauseBtn").textContent = state.running ? "Pause" : "Resume"; };
+$("practiceFast").onclick = () => {
+  if (state.mode !== "practice") setMode("practice");
+  state.running = true; $("pauseBtn").textContent = "Pause";
+  state.ff = 6000;   // 60 s of game time
+};
+function pointerX(ev) { const r = arena.getBoundingClientRect(); return clamp((ev.clientX - r.left) / r.width * CFG.W, CFG.paddleHalf, CFG.W - CFG.paddleHalf); }
+arena.addEventListener("pointermove", (ev) => { if (state.mode === "play") state.you.target = pointerX(ev); });
+arena.addEventListener("pointerdown", (ev) => {
+  if (state.mode !== "play") setMode("play");
+  state.you.target = pointerX(ev);
+  arena.setPointerCapture(ev.pointerId);
+});
+window.addEventListener("keydown", (e) => {
+  if (e.target instanceof HTMLInputElement) return;
+  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") { state.keys.l = true; if (state.mode !== "play") setMode("play"); e.preventDefault(); }
+  if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") { state.keys.r = true; if (state.mode !== "play") setMode("play"); e.preventDefault(); }
+});
+window.addEventListener("keyup", (e) => {
+  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") state.keys.l = false;
+  if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") state.keys.r = false;
+});
+
+// ------------------------------------------------------------------ main loop
+let last = performance.now(), acc = 0, statT = 0, simMsWindow = 0, wallMsWindow = 0;
+function loop(now) {
+  const el = Math.min(100, now - last); last = now;
+  if (state.running) {
+    const t0 = performance.now();
+    let ticks = 0;
+    if (state.ff > 0) {
+      while (performance.now() - t0 < 14 && state.ff > 0) { tick(); state.ff--; ticks++; }
+      $("speedCaption").textContent = `PRACTISING · ${Math.ceil(state.ff / 100)} S LEFT`;
+      if (state.ff === 0) $("speedCaption").textContent = "1× REAL TIME";
+    } else {
+      acc += el;
+      while (acc >= CFG.tickMs && ticks < 10) { tick(); acc -= CFG.tickMs; ticks++; }
+      if (ticks >= 10) acc = 0;
+    }
+    simMsWindow += ticks * CFG.tickMs; wallMsWindow += el;
+    if (wallMsWindow > 1000) {
+      state.simRate = simMsWindow / wallMsWindow;
+      if (state.ff === 0) $("speedCaption").textContent = state.simRate > 0.93 ? "1× REAL TIME" : `${state.simRate.toFixed(2)}× REAL TIME (SLOW DEVICE)`;
+      simMsWindow = 0; wallMsWindow = 0;
+    }
+  }
+  drawArena(el);
+  drawBrain(el);
+  drawEyes();
+  updateMeters();
+  statT += el;
+  if (statT > 400) { updateStats(); statT = 0; }
+  requestAnimationFrame(loop);
+}
+
+function resizeAll() { sizeArena(); sizeBrain(); sizeEyes(); drawCurve(); }
+window.addEventListener("resize", resizeAll);
+
+function start(snap) {
+  snap = snap || {};
+  if (snap.mult) plast.load(snap.mult);
+  if (snap.gain) setGain(snap.gain); else setGain(120);
+  if (snap.score) state.score = snap.score;
+  if (snap.faced) state.faced = snap.faced;
+  if (snap.blocks) state.blocks = snap.blocks;
+  if (snap.coach) { state.coach = true; $("coach").checked = true; }
+  if (snap.sparse) { state.sparse = true; $("sparse").checked = true; }
+  setMode(snap.mode || "practice");
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches && !snap.mode) {
+    state.running = false; $("pauseBtn").textContent = "Resume";
+  }
+  updateScore(); resizeAll(); updateStats();
+  requestAnimationFrame((t) => { last = t; requestAnimationFrame(loop); });
+}
+window.claude?.hot?.snapshot?.(() => ({
+  mult: Array.from(plast.mult), gain: state.gain, score: state.score, faced: state.faced.slice(-600),
+  blocks: state.blocks, coach: state.coach, sparse: state.sparse, mode: state.mode,
+}));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>

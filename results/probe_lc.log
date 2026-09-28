@@ -1,0 +1,43 @@
+LC10a
+LC10b
+LC10c-1
+LC10d
+LC9
+LC11
+LC12
+LC15
+LC17
+LC18
+LC21
+LC22
+LPLC1
+LPLC2
+       type   side  n_stim  n_active                                                                          top_DNs
+0     LC10a   left     115       488    DNae002_L:114, DNa02_L:107, DNa06_L:89, DNg111_L:87, DNa16_L:77, DNge033_L:75
+1     LC10a  right     119       585     DNae002_R:109, aSP22_R:85, DNg111_R:79, DNa06_R:76, DNge033_R:65, DNa02_R:59
+2     LC10b   left      40       123            DNb01_R:23, DNg97_L:13, DNb05_L:11, DNa01_R:7, DNbe007_L:7, DNa13_R:7
+3     LC10b  right      44       123              DNb01_L:19, DNbe001_R:9, DNb09_L:7, DNp18_L:5, DNg97_R:5, DNb05_R:3
+4   LC10c-1   left      46       236       DNa02_L:96, DNae002_L:79, DNa16_L:65, DNa06_L:61, DNge033_L:51, DNa10_L:50
+5   LC10c-1  right      56       243       DNa10_R:49, DNa02_R:49, DNae002_R:48, DNa16_R:37, DNa06_R:31, DNae009_R:30
+6     LC10d   left      93       423      DNa02_L:107, DNae002_L:94, DNa04_L:81, DNa16_L:65, DNp31_L:60, DNbe007_L:60
+7     LC10d  right      95       448      DNae002_R:99, DNa04_R:73, aSP22_R:66, DNa02_R:66, DNg111_R:56, DNbe007_R:49
+8       LC9   left      87       726         DNg16_R:77, DNg100_L:73, DNg100_R:67, DNg16_L:66, DNa01_R:63, DNp09_L:61
+9       LC9  right      92       953      DNp09_R:91, DNpe037_R:86, DNa01_L:86, DNpe024_R:82, DNp05_R:81, DNg100_L:77
+10     LC11   left      66       523       DNg100_R:37, DNa02_R:35, DNg100_L:30, DNbe001_L:26, DNp18_R:26, DNa02_L:24
+11     LC11  right      61       681   DNg100_R:55, DNg100_L:43, DNg97_R:36, DNbe001_R:33, DNge050_L:25, DNpe005_R:23
+12     LC12   left     198       689     DNg100_R:40, DNpe045_L:33, DNp70_L:33, DNg100_L:31, DNge054_L:25, DNp70_R:17
+13     LC12  right     182       676      DNpe045_R:59, DNge054_R:55, DNp70_R:37, DNg100_R:35, DNa02_L:34, DNb05_R:28
+14     LC15   left      52       845           DNp01_R:92, DNp06_R:75, DNp70_R:69, DNp70_L:68, DNg40_R:67, DNp01_L:64
+15     LC15  right      54       916       DNg100_L:76, DNge050_L:75, DNg100_R:73, DNg97_R:71, DNp01_L:63, DNp70_R:62
+16     LC17   left     134      1105       DNp70_L:114, DNp01_L:103, DNg100_L:92, DNp01_R:91, DNp70_R:91, DNg100_R:91
+17     LC17  right     142      1168   DNp70_R:133, DNp01_R:127, DNp70_L:108, DNg100_R:101, DNg100_L:99, DNpe045_R:98
+18     LC18   left      96       853     DNg100_L:71, DNg100_R:70, DNge050_L:49, DNa02_R:41, DNa13_R:39, DNge050_R:39
+19     LC18  right      92      1076     DNg100_L:84, DNg100_R:83, DNg97_R:71, DNge050_L:65, DNg13_L:62, DNpe040_R:57
+20     LC21   left      68       306  DNp35_L:55, DNge054_L:15, DNg74_b_L:14, DNg74_b_R:11, DNbe001_R:11, DNbe001_L:8
+21     LC21  right      62       384     DNge054_R:38, DNge050_L:21, DNg100_R:20, DNg97_R:19, DNg100_L:18, DNb05_R:18
+22     LC22   left      43       231    DNp26_L:129, DNp05_L:76, DNae002_R:67, DNp03_L:63, DNbe001_L:59, DNpe037_L:43
+23     LC22  right      46       317     DNp26_R:114, DNbe001_R:101, DNp05_R:81, DNb09_L:49, DNpe037_R:49, DNg82_L:39
+24    LPLC1   left      68      1412      DNp03_L:125, DNp11_L:109, DNp06_L:100, DNg100_L:75, DNg100_R:75, DNa09_R:61
+25    LPLC1  right      72      1058         DNg100_R:89, DNp06_R:87, DNg100_L:85, DNp34_L:67, DNg97_R:61, DNa01_L:61
+26    LPLC2   left     108       672      DNp103_L:168, DNp04_L:132, DNp01_L:110, DNp70_L:103, DNg40_L:99, DNp01_R:95
+27    LPLC2  right     102       615    DNp103_R:162, DNp01_R:136, DNp04_R:128, DNp70_R:109, DNpe042_R:94, DNg40_R:94

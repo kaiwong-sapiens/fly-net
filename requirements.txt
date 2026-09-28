@@ -1,0 +1,7 @@
+numpy>=1.26
+scipy
+pandas>=2
+pyarrow
+numba>=0.60
+# optional: male CNS via neuPrint
+neuprint-python

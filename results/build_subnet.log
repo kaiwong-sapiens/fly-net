@@ -1,0 +1,6 @@
+LC10a right: n=119  corr(azimuth axis, AOTU019-pref) = 0.90
+LC10a left: n=115  corr(azimuth axis, AOTU019-pref) = 0.93
+plastic synapses (LC10a outputs): 18239
+  sweep done (87s), neurons active so far: 780
+  sweep done (171s), neurons active so far: 1370
+sub-circuit neurons: 1370

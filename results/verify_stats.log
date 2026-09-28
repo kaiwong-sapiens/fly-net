@@ -1,0 +1,16 @@
+courting 11 105 29 0.78
+courting 12 108 27 0.8
+courting 13 108 26 0.81
+naive 11 61 106 0.37
+naive 12 60 110 0.35
+naive 13 61 109 0.36
+still 11 43 145 0.23
+still 12 47 138 0.25
+still 13 44 143 0.24
+coached 11 116 19 0.86
+coached 12 110 24 0.82
+coached 13 113 21 0.84
+courting  pooled 321/403 = 0.80   per-seed [0.78, 0.8, 0.81]
+naive     pooled 182/507 = 0.36   per-seed [0.37, 0.35, 0.36]
+still     pooled 134/560 = 0.24   per-seed [0.23, 0.25, 0.24]
+coached   pooled 339/403 = 0.84   per-seed [0.86, 0.82, 0.84]

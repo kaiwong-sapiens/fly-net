@@ -1,0 +1,8 @@
+   trial  gain  whole_brain_active  spiking_outside_sub steering_spikes_whole steering_spikes_sub  identical
+0      0    70                 183                    0         [16, 2, 0, 0]       [16, 2, 0, 0]       True
+1      1   123                 472                    0        [0, 45, 0, 15]      [0, 45, 0, 15]       True
+2      2   110                 403                    0         [0, 12, 0, 4]       [0, 12, 0, 4]       True
+3      3    84                 393                    0         [39, 0, 3, 0]       [39, 0, 3, 0]       True
+4      4   107                 457                    0         [64, 0, 5, 0]       [64, 0, 5, 0]       True
+5      5    90                 378                    0        [97, 0, 20, 0]      [97, 0, 20, 0]       True
+ALL IDENTICAL
