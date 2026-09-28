@@ -186,7 +186,7 @@ button, input, select { font: inherit; }
 @media (hover: hover) { .legend .key:hover { background: rgba(216, 226, 218, .07); } }
 .legend .key[aria-expanded="true"] .k-role { text-decoration-style: solid; }
 @media (pointer: coarse) { .term:not(.key) { padding-block: 5px; margin-block: -5px; } .legend .key { padding-block: 10px; } }
-.info-pop { position: fixed; z-index: 60; width: max-content; max-width: min(340px, calc(100vw - 24px)); padding: 14px 16px 14px; border-radius: 8px;
+.info-pop { position: fixed; z-index: 60; width: max-content; max-width: min(340px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow-y: auto; padding: 14px 16px 14px; border-radius: 8px;
   background: var(--panel); color: var(--ink); border: 1px solid var(--rule); box-shadow: 0 10px 30px rgba(10, 20, 14, .22); }
 .info-pop h4 { margin: 0 28px 6px 0; font-family: var(--f-mono); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
 .info-pop p { margin: 0; font-family: var(--f-prose); font-size: 15.5px; line-height: 1.45; text-wrap: pretty; }
@@ -348,7 +348,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
       <div class="sense-row">
         <div class="screen eyes-wrap">
-          <span class="label">What its eyes report · LC10a receptive fields</span>
+          <span class="label"><button class="term" data-info="inputs">What its eyes report</button> · LC10a receptive fields</span>
           <div class="eyes">
             <figure class="eye"><canvas id="eyeA" aria-label="The fly's right eye: LC10a activity" role="img"></canvas><figcaption>its right eye</figcaption></figure>
             <figure class="eye"><canvas id="eyeB" aria-label="The fly's left eye: LC10a activity" role="img"></canvas><figcaption>its left eye</figcaption></figure>
@@ -418,6 +418,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     <div>
       <h2>How the fly plays</h2>
       <p>Each paddle movement is the end of a chain of spikes through real wiring. The chain below is the fly's visual pursuit pathway, the one males use to chase a moving female during courtship.</p>
+      <p>The game gives the fly one thing: the ball. Every 10 ms it works out, from the fly's paddle, how far the ball is to the fly's left or right and how big it looks, and sets how fast each eye neuron fires from how close the ball is to that neuron's patch of view. The fly can't see your paddle, the walls or the score. Sugar and heat never reach it as spikes; they change the strength of its synapses directly.</p>
       <p>Watch how it plays. While the ball is roughly in front, the fly holds still. Once the ball drifts more than about 40° to one side, which happens late in its approach, the fly swings toward it. That style comes straight out of the wiring. The peripheral relay, AOTU025, excites the steering neuron on its own side. The central relay, AOTU019, uses the inhibitory transmitter GABA and holds down the steering neuron on the opposite side, so a ball in front keeps both steering neurons quiet.</p>
       <div class="path">
         <div class="stage">
@@ -1414,6 +1415,7 @@ const INFO = {
   connections: { t: "82,282 connections", p: "The links between those 1,370 neurons. Each carries the number of synapses FlyWire counted between the two cells, and a sign from the transmitter the sending cell is predicted to use: GABA and glutamate inhibit, the rest excite. Its strength is the synapse count × 0.275 millivolts." },
   model: { t: "Spiking model", p: "Every neuron is the same simple unit: it adds up incoming signals, leaks back towards rest, and fires a spike when it crosses a threshold. Only the wiring differs. Shiu et al. used this model on the whole FlyWire brain to find the neurons behind feeding and grooming, and the simulator here reproduces theirs (r = 0.999).",
     link: ["Shiu et al., Nature 2024", "https://www.nature.com/articles/s41586-024-07763-9"] },
+  inputs: { t: "What the fly gets from the game", p: "Only the ball. Every 10 ms the game works out, from the fly's paddle, how far the ball is to its left or right and how big it looks (about 3° at your end, over 30° up close); the line under the eyes shows both. Each eye neuron fires at gain × e^(−d²/2σ²), where d is the angle from the ball to that neuron's patch of view and σ² = 16² + (size/2)². The fly can't see your paddle, the walls or the score. Sugar and heat change its synapses directly and never arrive as spikes." },
   lc10a: { t: "Eye neurons · LC10a", p: "Visual neurons that respond to small moving objects. Male flies use them to chase a female during courtship. Each of the 234, about 115 per eye, watches its own patch of the visual field, and the ball excites the ones it falls in." },
   aotu: { t: "Relay neurons · AOTU019, AOTU025", p: "Two relays per side in the anterior optic tubercle pass the eye signal on to the steering neurons. AOTU025 serves the periphery and excites the steering neuron on its own side, about 160 synapses. AOTU019 serves the centre of view; it uses GABA, so it is inhibitory, and holds down the steering neuron on the opposite side. A ball in front keeps both steering neurons quiet; a ball off to one side makes the fly turn.",
     link: ["Collie et al., Neuron 2026", "https://www.biorxiv.org/content/10.1101/2025.04.23.650240v2"] },
@@ -1440,7 +1442,7 @@ function openInfo(btn) {
   infoPop.hidden = false; infoFor = btn; btn.setAttribute("aria-expanded", "true");
   const r = btn.getBoundingClientRect(), w = infoPop.offsetWidth, h = infoPop.offsetHeight, m = 12;
   let top = r.bottom + 8;
-  if (top + h > innerHeight - m && r.top - 8 - h > m) top = r.top - 8 - h;        // no room below: open above
+  if (top + h > innerHeight - m) top = r.top - 8 - h > m ? r.top - 8 - h : innerHeight - h - m;   // no room below: above, else as low as fits
   infoPop.style.top = Math.max(m, top) + "px";
   infoPop.style.left = clamp(r.left + r.width / 2 - w / 2, m, Math.max(m, innerWidth - w - m)) + "px";
 }

@@ -1,6 +1,6 @@
 # fly-net · Fly Pong
 
-Play Pong against a fruit fly's brain. The fly's paddle (top) is driven by **1,370 spiking neurons wired exactly as in the FlyWire whole-brain connectome**. The ball excites the fly's object-detecting eye neurons (LC10a). The fly's own wiring turns that into activity in its steering neurons (DNa02/DNa01), and their right-minus-left firing moves the paddle. Nothing about its play is scripted. You can also train it with dopamine-style plasticity.
+Play Pong against a fruit fly's brain. The fly's paddle (top) is driven by **1,370 spiking neurons wired exactly as in the FlyWire whole-brain connectome**. The ball excites the fly's object-detecting eye neurons (LC10a). The fly's own wiring turns that into activity in its steering neurons (DNa02/DNa01), and their right-minus-left firing moves the paddle. Nothing about its play is scripted. You can also train it with dopamine-style plasticity. The fly's only input is the ball: every 10 ms, its direction and apparent size from the fly's paddle set the firing rates of the 234 eye neurons. It cannot see your paddle, the walls or the score.
 
 ```
 ball ─► LC10a eye neurons (234) ─► AOTU019 / AOTU025 ─► … 1,128 more neurons … ─► DNa02 / DNa01 ─► paddle
