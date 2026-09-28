@@ -1199,18 +1199,19 @@ const EYES = [
 ];
 const LCAZ = DATA.lc10a.azimuth, LCEL = DATA.lc10a.elevation, LCRIGHT = DATA.lc10a.side.map((s) => (s === "right" ? 1 : 0));
 function sizeEyes() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
   for (const e of EYES) {
     const r = e.c.getBoundingClientRect();
     e.c.width = Math.max(1, Math.round(r.width * dpr)); e.c.height = Math.max(1, Math.round(r.height * dpr));
     const W = e.c.width, H = e.c.height;
+    e.dpr = dpr;
     e.X = (az) => (e.hi - az) / (e.hi - e.lo) * W;
     e.Y = (el) => (1 - (el + 60) / 130) * H;
     e.rr = Math.max(2, W / 60);
     const base = document.createElement("canvas"); base.width = W; base.height = H;
     const g = base.getContext("2d");
     g.fillStyle = "#070b09"; g.fillRect(0, 0, W, H);
-    g.strokeStyle = "#223027"; g.lineWidth = 1; g.setLineDash([3, 3]);
+    g.strokeStyle = "#223027"; g.lineWidth = 0.5 * dpr; g.setLineDash([1.5 * dpr, 1.5 * dpr]);
     g.beginPath(); g.moveTo(0, e.Y(0)); g.lineTo(W, e.Y(0)); g.moveTo(e.X(0), 0); g.lineTo(e.X(0), H); g.stroke(); g.setLineDash([]);
     g.fillStyle = "#14211a"; g.beginPath();
     for (let k = 0; k < LCAZ.length; k++) {
@@ -1224,6 +1225,17 @@ function sizeEyes() {
     g.fillText("front", e.right ? e.X(0) - 4 : e.X(0) + 4, H - 5);
     e.base = base;
   }
+}
+// a shaded sphere lit from the upper left, with a soft shadow and a dark rim to lift it off the neurons behind it
+function drawEyeBall(g, x, y, r, px) {
+  g.save();
+  g.shadowColor = "rgba(0, 0, 0, 0.7)"; g.shadowBlur = Math.max(4 * px, r * 0.7); g.shadowOffsetY = Math.max(1.5 * px, r * 0.15);
+  const shade = g.createRadialGradient(x - r * 0.38, y - r * 0.42, r * 0.05, x, y, r);
+  shade.addColorStop(0, "#ffffff"); shade.addColorStop(0.28, "#eef3ef"); shade.addColorStop(0.72, "#a9b5ac"); shade.addColorStop(1, "#5f6c63");
+  g.fillStyle = shade; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+  g.restore();
+  g.strokeStyle = "rgba(7, 11, 9, 0.9)"; g.lineWidth = 1.25 * px;
+  g.beginPath(); g.arc(x, y, r + g.lineWidth / 2, 0, 7); g.stroke();
 }
 const liveShown = {};
 function setLive(id, val) { if (liveShown[id] !== val) { liveShown[id] = val; $(id).textContent = val; } }
@@ -1242,11 +1254,10 @@ function drawEyes() {
       g.beginPath(); g.arc(e.X(LCAZ[k]), e.Y(LCEL[k]), e.rr * 1.15, 0, 7); g.fill();
     }
     g.globalAlpha = 1;
-    const az = S.view.az;
-    if (az >= e.lo && az <= e.hi) {
-      g.strokeStyle = "#d8e2da"; g.lineWidth = Math.max(1, e.c.width / 220);
-      g.beginPath(); g.arc(e.X(az), e.Y(0), Math.max(4, S.view.size / (e.hi - e.lo) * e.c.width / 2 + 3), 0, 7); g.stroke();
-    }
+    // the ball as the fly sees it: its true angular size, plus a few pixels so a distant ball stays visible
+    const az = S.view.az, perDeg = e.c.width / (e.hi - e.lo), px = e.dpr;
+    const r = (S.view.size / 2) * perDeg + 4.5 * px;
+    if (az + r / perDeg >= e.lo && az - r / perDeg <= e.hi) drawEyeBall(g, e.X(az), e.Y(0), r, px);
   }
   // model input: the ball's direction and apparent size, in fixed-width slots
   setLive("ballAz", String(Math.min(99, Math.abs(Math.round(S.view.az)))));
