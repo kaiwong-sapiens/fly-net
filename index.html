@@ -278,7 +278,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 <main class="page">
   <header class="masthead">
     <h1 class="wordmark">FLY <br><span>PONG</span></h1>
-    <p class="lede">The bottom paddle belongs to 1,370 neurons from a real fruit-fly brain. The ball lights up the fly's object-detecting eye cells, the fly's own wiring turns that into steering commands, and the steering moves its paddle. Nothing about its play is scripted, and you can train it.</p>
+    <p class="lede">The top paddle belongs to 1,370 neurons from a real fruit-fly brain. The ball lights up the fly's object-detecting eye cells, the fly's own wiring turns that into steering commands, and the steering moves its paddle. Nothing about its play is scripted, and you can train it.</p>
     <p class="specline">FlyWire whole-brain connectome, release 783 &nbsp;·&nbsp; 1,370 of 138,639 neurons &nbsp;·&nbsp; 82,282 connections &nbsp;·&nbsp; spiking model after Shiu et al. 2024</p>
   </header>
 
@@ -292,7 +292,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         <span class="who">FLY</span>
       </div>
       <div class="screen arena-wrap">
-        <canvas id="arena" aria-label="Pong arena. Your paddle is at the top, the fly's paddle at the bottom." role="img"></canvas>
+        <canvas id="arena" aria-label="Pong arena. Your paddle is at the bottom, the fly's paddle at the top." role="img"></canvas>
         <div class="arena-caption"><span id="modeCaption">THE FLY PRACTISES ON A WALL</span><span id="speedCaption" class="normal">1× REAL TIME</span></div>
       </div>
       <div class="pad" id="pad" role="slider" aria-label="Your paddle position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" tabindex="-1"><span id="padLabel">touch here to play</span><i id="padKnob"></i></div>
@@ -300,14 +300,14 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         <button id="modePlay" aria-pressed="false">You play</button>
         <button id="modePractice" aria-pressed="true">Fly practises</button>
       </div>
-      <p class="hint" id="hint">Move the pointer or drag over the arena to steer your paddle. Arrow keys or A/D work too.</p>
+      <p class="hint" id="hint">Click the arena or press ← → to take the bottom paddle and play against the fly.</p>
       <p class="rotate-hint">Turn your phone upright for a bigger arena.</p>
     </div>
 
     <div class="lab-col">
       <div class="screen brain-wrap">
         <div class="brain-head">
-          <span class="label">Brain, seen from behind the head · live spikes</span>
+          <span class="label">Brain, seen from the front as you face the fly · live spikes</span>
           <span class="status" id="brainStatus">0 neurons firing</span>
         </div>
         <canvas id="brain" aria-label="Map of the fly brain showing the 1,370 simulated neurons at their real positions, flashing when they spike." role="img"></canvas>
@@ -324,19 +324,19 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         <div class="screen eyes-wrap">
           <span class="label">What its eyes report · LC10a receptive fields</span>
           <div class="eyes">
-            <canvas id="eyeL" aria-label="Left eye LC10a activity" role="img"></canvas>
-            <canvas id="eyeR" aria-label="Right eye LC10a activity" role="img"></canvas>
+            <canvas id="eyeA" aria-label="The fly's right eye: LC10a activity" role="img"></canvas>
+            <canvas id="eyeB" aria-label="The fly's left eye: LC10a activity" role="img"></canvas>
           </div>
-          <div class="eyes-foot"><span>left eye</span><span id="ballRead">ball at 0° · 2° wide</span><span>right eye</span></div>
+          <div class="eyes-foot"><span>its right eye</span><span id="ballRead">ball dead ahead · 2° wide</span><span>its left eye</span></div>
         </div>
         <div class="screen steer-wrap">
           <span class="label">Steering neurons · spikes/s</span>
-          <div class="meter-scale"><span></span><span>← left</span><span>right →</span></div>
-          <div class="meter"><span class="name">DNa02</span><div class="bar l"><i id="m02L"></i></div><div class="bar r"><i id="m02R"></i></div></div>
-          <div class="meter"><span class="name">DNa01</span><div class="bar l"><i id="m01L"></i></div><div class="bar r"><i id="m01R"></i></div></div>
+          <div class="meter-scale"><span></span><span>← its right</span><span>its left →</span></div>
+          <div class="meter"><span class="name">DNa02</span><div class="bar l"><i id="m02R"></i></div><div class="bar r"><i id="m02L"></i></div></div>
+          <div class="meter"><span class="name">DNa01</span><div class="bar l"><i id="m01R"></i></div><div class="bar r"><i id="m01L"></i></div></div>
           <div class="turn">
             <div class="turn-track"><div class="turn-needle" id="needle"></div></div>
-            <div class="turn-read"><span id="rateL">L 0</span><span id="turnRead">turn 0</span><span id="rateR">R 0</span></div>
+            <div class="turn-read"><span id="rateR">R 0</span><span id="turnRead">steer 0</span><span id="rateL">L 0</span></div>
           </div>
         </div>
       </div>
@@ -481,15 +481,14 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 </main>
 
 <script src="data/flypong_circuit.js"></script>
-<script>
-(() => {
+<script id="engine">
+(function (G) {
 "use strict";
-const DATA = window.FLYPONG_CIRCUIT;
-const $ = (id) => document.getElementById(id);
-const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+// Fly Pong engine: spiking brain, eyes, learning and game physics. No DOM, so it runs in a Web Worker
+// (or on the page as a fallback). World coordinates: the fly's paddle is at y = H looking toward y = 0;
+// the page rotates the view so the player sees their own paddle at the bottom.
 const DEG = 180 / Math.PI;
-
-// ------------------------------------------------------------------ constants
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const CFG = {
   W: 1, H: 1.4, paddleHalf: 0.09, ballR: 0.03, paddleY: 0.05,
   speed0: 0.75, speedUp: 1.03, speedMax: 1.4,
@@ -497,9 +496,8 @@ const CFG = {
   playerVMax: 2.4, sigmaRF: 16,
 };
 const LEARN = { tauE: 800, etaCoach: 0.01, etaSparse: 0.01, etaManual: 0.02, wMin: 0, wMax: 3 };
-const CHANCE = 0.24;   // return rate of a motionless paddle (measured offline, 3 x 5 min)
+const REST_EPS = 1e-6;   // below 1 microvolt (threshold is 7 mV above rest) a neuron is treated as at rest
 
-// ------------------------------------------------------------------ RNG
 function mulberry32(a) {
   return function () {
     a |= 0; a = (a + 0x6D2B79F5) | 0;
@@ -509,8 +507,8 @@ function mulberry32(a) {
   };
 }
 
-// ------------------------------------------------------------------ spiking brain
 // Leaky integrate-and-fire network with the parameters and Brian2 semantics of Shiu et al. 2024.
+// Each 0.1 ms step visits only neurons that hold charge and targets with spikes in transit.
 class Brain {
   constructor(d, seed) {
     const n = this.n = d.n;
@@ -544,10 +542,13 @@ class Brain {
     this.resetState();
   }
   resetState() {
-    this.u = new Float32Array(this.n);
-    this.g = new Float32Array(this.n);
-    this.refUntil = new Float64Array(this.n);
-    this.buf = new Float32Array(this.D * this.n);
+    const n = this.n, D = this.D;
+    this.u = new Float32Array(n);
+    this.g = new Float32Array(n);
+    this.refUntil = new Float64Array(n);
+    this.buf = new Float32Array(D * n);
+    this.act = new Int32Array(n); this.inAct = new Uint8Array(n); this.nAct = 0;
+    this.tList = new Int32Array(D * n); this.tCnt = new Int32Array(D); this.tFlag = new Uint8Array(D * n);
     this.t = 0;
   }
   // advance nSteps (0.1 ms each) with constant Poisson rates (Hz) on the LC10a inputs
@@ -557,13 +558,16 @@ class Brain {
     const indptr = this.indptr, indices = this.indices, weff = this.weff, isStim = this.isStim;
     const spk = this.spk, counts = this.counts, stim = this.stimIdx;
     const head = this.evHead, next = this.evNext, evStim = this.evStim, rnd = this.rnd;
+    const act = this.act, inAct = this.inAct, tList = this.tList, tCnt = this.tCnt, tFlag = this.tFlag;
+    const fr = Math.fround;
+    let nAct = this.nAct;
     counts.fill(0);
     head.fill(-1, 0, nSteps);
     // Poisson input: exact per-step Bernoulli trials, sampled by geometric skipping
     let ne = 0;
     for (let k = 0; k < stim.length; k++) {
       const pr = rates[k] * this.dt * 1e-3;
-      if (!(pr > 1e-12)) continue;               // far-off neurons: no events (and avoid log(1) = 0)
+      if (!(pr > 1e-12)) continue;
       const lq = Math.log1p(-pr);
       let s = Math.floor(Math.log(1 - rnd()) / lq);
       while (s < nSteps && ne < evStim.length) {
@@ -573,60 +577,69 @@ class Brain {
     }
     let t = this.t;
     for (let st = 0; st < nSteps; st++, t++) {
-      // 1. integrate (exact solution over dt); frozen while refractory
-      for (let i = 0; i < n; i++) {
-        if (t < ru[i]) continue;
-        const gi = g[i], ui = u[i];
-        if (gi !== 0 || ui !== 0) { u[i] = ui * am + gi * c; g[i] = gi * as; }
-      }
-      // 2. threshold
+      // 1+2. integrate (exact solution over dt; frozen while refractory) and test threshold
       let ns = 0;
-      for (let i = 0; i < n; i++) {
-        if (u[i] > thr && t >= ru[i]) { spk[ns++] = i; ru[i] = t + (isStim[i] ? 1 : R); }
+      for (let k = 0; k < nAct;) {
+        const i = act[k];
+        if (t < ru[i]) { k++; continue; }
+        const gi = g[i];
+        const ui = fr(u[i] * am + gi * c), gn = fr(gi * as);
+        if (ui > thr) { u[i] = ui; g[i] = gn; spk[ns++] = i; ru[i] = t + (isStim[i] ? 1 : R); k++; }
+        else if (ui <= REST_EPS && ui >= -REST_EPS && gn <= REST_EPS && gn >= -REST_EPS) { u[i] = 0; g[i] = 0; inAct[i] = 0; act[k] = act[--nAct]; }
+        else { u[i] = ui; g[i] = gn; k++; }
       }
-      // 3. deliver spikes sent 1.8 ms ago (dropped if the target is refractory), Poisson kicks
-      const off = (t % D) * n;
-      for (let i = 0; i < n; i++) {
-        const x = buf[off + i];
-        if (x !== 0) { if (t >= ru[i]) g[i] += x; buf[off + i] = 0; }
+      // 3. deliver spikes sent 1.8 ms ago (dropped if the target is refractory), then Poisson kicks
+      const slot = t % D, off = slot * n, cnt = tCnt[slot];
+      for (let q = 0; q < cnt; q++) {
+        const j = tList[off + q], o = off + j, x = buf[o];
+        buf[o] = 0; tFlag[o] = 0;
+        if (x !== 0 && t >= ru[j]) {
+          g[j] = fr(g[j] + x);
+          if (!inAct[j]) { inAct[j] = 1; act[nAct++] = j; }
+        }
       }
-      for (let e = head[st]; e !== -1; e = next[e]) u[evStim[e]] += kick;
+      tCnt[slot] = 0;
+      for (let e = head[st]; e !== -1; e = next[e]) {
+        const i = evStim[e];
+        u[i] = fr(u[i] + kick);
+        if (!inAct[i]) { inAct[i] = 1; act[nAct++] = i; }
+      }
       // 4. reset spiking neurons and schedule their output
       for (let q = 0; q < ns; q++) {
         const i = spk[q];
         u[i] = 0; g[i] = 0; counts[i]++;
-        for (let e = indptr[i], E = indptr[i + 1]; e < E; e++) buf[off + indices[e]] += weff[e] * wsyn;
+        for (let e = indptr[i], E = indptr[i + 1]; e < E; e++) {
+          const j = indices[e], o = off + j;
+          buf[o] = fr(buf[o] + weff[e] * wsyn);
+          if (!tFlag[o]) { tFlag[o] = 1; tList[off + tCnt[slot]++] = j; }
+        }
       }
     }
+    this.nAct = nAct;
     this.t = t;
   }
 }
 
-// ------------------------------------------------------------------ eyes
+// ball -> LC10a firing rates through Gaussian receptive fields (ball on the fly's horizon)
 class Retina {
   constructor(d) {
     const L = d.lc10a;
     this.n = L.i.length;
     this.az = Float64Array.from(L.azimuth, (v) => v / DEG);
-    this.el = Float64Array.from(L.elevation);
-    this.azDeg = Float64Array.from(L.azimuth);
     this.cosEl = Float64Array.from(L.elevation, (v) => Math.cos(v / DEG));
-    this.right = Uint8Array.from(L.side, (s) => (s === "right" ? 1 : 0));
     this.rates = new Float64Array(this.n);
   }
-  // ball at elevation 0 (Pong is flat), azimuth in degrees (+ = fly's right)
   update(azDeg, sizeDeg, gain) {
     const b = azDeg / DEG, s2 = CFG.sigmaRF * CFG.sigmaRF + (sizeDeg / 2) * (sizeDeg / 2);
     for (let k = 0; k < this.n; k++) {
-      const cosd = clamp(this.cosEl[k] * Math.cos(this.az[k] - b), -1, 1);
-      const dd = Math.acos(cosd) * DEG;
+      const dd = Math.acos(clamp(this.cosEl[k] * Math.cos(this.az[k] - b), -1, 1)) * DEG;
       this.rates[k] = gain * Math.exp(-(dd * dd) / (2 * s2));
     }
     return this.rates;
   }
 }
 
-// ------------------------------------------------------------------ dopamine-gated plasticity
+// dopamine-gated three-factor plasticity on every LC10a output synapse
 class Plasticity {
   constructor(brain) {
     this.b = brain;
@@ -669,201 +682,354 @@ class Plasticity {
   changed() {
     let up = 0, down = 0;
     for (let j = 0; j < this.P; j++) { const m = this.mult[j]; if (m > 1.05) up++; else if (m < 0.95) down++; }
-    return { up, down };
+    return { up, down, total: this.P };
   }
 }
 
-// ------------------------------------------------------------------ game
-const brain = new Brain(DATA, 7);
-const retina = new Retina(DATA);
-const plast = new Plasticity(brain);
-const S = DATA.steer;
+class Sim {
+  constructor(d, snap) {
+    this.d = d;
+    this.brain = new Brain(d, 7);
+    this.retina = new Retina(d);
+    this.plast = new Plasticity(this.brain);
+    this.S = d.steer;
+    this.rng = mulberry32(12345);
+    this.st = {
+      mode: "practice", running: true, gain: 120, coach: false, sparse: false,
+      ball: { x: 0.5, y: 0.2, vx: 0, vy: 1, speed: CFG.speed0 },
+      fly: { x: 0.5, v: 0 }, you: { x: 0.5, target: null, dir: 0 },
+      dn: [0, 0, 0, 0], turn: 0, view: { az: 0, size: 2 },
+      score: { you: 0, fly: 0 }, facedTotal: 0, returnedTotal: 0, recent: [], blockAcc: 0, blocks: [],
+      da: 0, rbar: 0, ff: 0,
+    };
+    this.viz = new Float32Array(d.n);
+    this.simRate = 1;
+    this.blocksVersion = 1; this.blocksSent = 0;
+    this.snapCount = 0; this.multDirty = false; this.lastMultSnap = 0;
+    if (snap) this.load(snap);
+    this.serve("fly");
+  }
+  load(s) {
+    const st = this.st;
+    if (s.mult) this.plast.load(s.mult);
+    if (s.gain) st.gain = s.gain;
+    if (s.score) st.score = { you: s.score.you | 0, fly: s.score.fly | 0 };
+    if (s.facedTotal) st.facedTotal = s.facedTotal | 0;
+    if (s.returnedTotal) st.returnedTotal = s.returnedTotal | 0;
+    if (s.recent) st.recent = s.recent.slice(-20);
+    if (s.blocks) st.blocks = s.blocks.slice(-60);
+    st.coach = !!s.coach; st.sparse = !!s.sparse;
+    if (s.mode === "play" || s.mode === "practice") st.mode = s.mode;
+    if (s.running === false) st.running = false;
+  }
+  serve(towards) {
+    const b = this.st.ball, rng = this.rng, practice = this.st.mode === "practice";
+    b.speed = CFG.speed0;
+    const ang = (rng() * 2 - 1) * 0.5;
+    b.x = 0.25 + rng() * 0.5;
+    b.y = practice ? 0.1 : CFG.H / 2;
+    b.vx = Math.sin(ang);
+    b.vy = (practice || towards === "fly") ? Math.cos(ang) : -Math.cos(ang);
+  }
+  pulse(v) { this.st.da = clamp(this.st.da + v * 0.4, -1, 1); }
+  learn(da, eta) { this.plast.apply(da, eta); this.multDirty = true; }
+  recordFly(returned) {
+    const st = this.st, r = returned ? 1 : 0;
+    st.facedTotal++; st.returnedTotal += r; st.blockAcc += r;
+    st.recent.push(r); if (st.recent.length > 20) st.recent.shift();
+    if (st.facedTotal % 10 === 0) {
+      st.blocks.push({ r: st.blockAcc, gain: st.gain, trained: st.coach || st.sparse });
+      if (st.blocks.length > 60) st.blocks.shift();
+      st.blockAcc = 0; this.blocksVersion++;
+    }
+    if (st.sparse) {
+      const rr = returned ? 1 : -1, da = rr - st.rbar;
+      st.rbar += 0.1 * (rr - st.rbar);
+      this.learn(da, LEARN.etaSparse);
+      this.pulse(da);
+    }
+  }
+  tick() {
+    const st = this.st, b = st.ball, fly = st.fly, dtS = CFG.tickMs / 1000, S = this.S;
+    // what the fly sees: the ball's direction and apparent size, relative to its heading
+    const dx = b.x - fly.x, dy = (CFG.H - 0.02) - b.y;
+    const az = Math.atan2(dx, Math.max(dy, 1e-3)) * DEG;
+    const dist = Math.hypot(dx, dy);
+    const size = 2 * Math.atan(CFG.ballR / Math.max(dist, 1e-3)) * DEG;
+    st.view.az = az; st.view.size = size;
+    const rates = this.retina.update(az, size, st.gain);
+    this.brain.block(CFG.stepsPerTick, rates);
+    const c = this.brain.counts, viz = this.viz;
+    for (let i = 0; i < this.brain.n; i++) if (c[i]) viz[i] += c[i];
+    // steering readout: right minus left
+    const k = 1000 / CFG.tickMs, a = Math.exp(-CFG.tickMs / CFG.tauDn), dn = st.dn;
+    const raw = [c[S.DNa02_L] * k, c[S.DNa02_R] * k, c[S.DNa01_L] * k, c[S.DNa01_R] * k];
+    for (let j = 0; j < 4; j++) dn[j] = a * dn[j] + (1 - a) * raw[j];
+    st.turn = (dn[1] - dn[0]) + CFG.beta01 * (dn[3] - dn[2]);
+    fly.v = clamp(CFG.K * st.turn, -CFG.vMax, CFG.vMax);
+    fly.x = clamp(fly.x + fly.v * dtS, CFG.paddleHalf, CFG.W - CFG.paddleHalf);
+    // learning
+    this.plast.frame(c, CFG.tickMs);
+    if (st.coach) {
+      const toward = Math.sign(b.x - fly.x) * fly.v / CFG.vMax;
+      this.learn(toward, LEARN.etaCoach);
+      st.da = 0.85 * st.da + 0.15 * toward;
+    } else {
+      st.da *= 0.9;
+    }
+    // your paddle
+    if (st.mode === "play") {
+      const you = st.you;
+      let vx = 0;
+      if (you.dir) vx = you.dir * CFG.playerVMax;
+      else if (you.target !== null) vx = clamp((you.target - you.x) / dtS, -CFG.playerVMax, CFG.playerVMax);
+      you.x = clamp(you.x + vx * dtS, CFG.paddleHalf, CFG.W - CFG.paddleHalf);
+    }
+    // ball
+    const sp = b.speed * CFG.H;
+    b.x += b.vx * sp * dtS; b.y += b.vy * sp * dtS;
+    if (b.x < CFG.ballR) { b.x = CFG.ballR; b.vx = Math.abs(b.vx); }
+    if (b.x > CFG.W - CFG.ballR) { b.x = CFG.W - CFG.ballR; b.vx = -Math.abs(b.vx); }
+    if (b.vy < 0 && b.y <= CFG.paddleY) {
+      if (st.mode === "practice") {
+        const ang = (this.rng() * 2 - 1) * 0.7;
+        b.vx = Math.sin(ang); b.vy = Math.cos(ang); b.y = CFG.paddleY;
+      } else if (Math.abs(b.x - st.you.x) <= CFG.paddleHalf + CFG.ballR) {
+        const ang = 0.6 * (b.x - st.you.x) / CFG.paddleHalf;
+        b.vx = Math.sin(ang); b.vy = Math.cos(ang); b.y = CFG.paddleY;
+        b.speed = Math.min(b.speed * CFG.speedUp, CFG.speedMax);
+      } else {
+        st.score.fly++; this.serve("you");
+      }
+    }
+    if (b.vy > 0 && b.y >= CFG.H - CFG.paddleY) {
+      if (Math.abs(b.x - fly.x) <= CFG.paddleHalf + CFG.ballR) {
+        const ang = 0.6 * (b.x - fly.x) / CFG.paddleHalf;
+        b.vx = Math.sin(ang); b.vy = -Math.cos(ang); b.y = CFG.H - CFG.paddleY;
+        b.speed = Math.min(b.speed * CFG.speedUp, CFG.speedMax);
+        this.recordFly(true);
+      } else {
+        this.recordFly(false);
+        if (st.mode === "play") st.score.you++;
+        this.serve("fly");
+      }
+    }
+  }
+  command(m) {
+    const st = this.st;
+    switch (m.type) {
+      case "mode":
+        if (m.mode !== st.mode) { st.mode = m.mode; st.you.x = 0.5; st.you.target = null; st.you.dir = 0; this.serve("fly"); }
+        break;
+      case "gain": st.gain = +m.value; break;
+      case "naive": st.gain = 45; this.plast.reset(); this.multDirty = true; break;
+      case "coach": st.coach = !!m.on; break;
+      case "sparse": st.sparse = !!m.on; break;
+      case "sugar": this.learn(1, LEARN.etaManual); this.pulse(1); break;
+      case "heat": this.learn(-1, LEARN.etaManual); this.pulse(-1); break;
+      case "resetSyn": this.plast.reset(); this.multDirty = true; break;
+      case "resetScore":
+        st.score = { you: 0, fly: 0 }; st.facedTotal = 0; st.returnedTotal = 0; st.recent = []; st.blocks = []; st.blockAcc = 0;
+        this.blocksVersion++; break;
+      case "running": st.running = !!m.on; break;
+      case "practiceFast":
+        if (st.mode !== "practice") { st.mode = "practice"; st.you.target = null; st.you.dir = 0; this.serve("fly"); }
+        st.running = true; st.ff = m.ticks || 6000; break;
+      case "target": st.you.target = m.x; break;
+      case "dir": st.you.dir = m.dir; break;
+    }
+  }
+  // state for the page; spikes accumulated since the previous snapshot are handed over
+  snapshot() {
+    const st = this.st;
+    const rates = new Float32Array(this.retina.n); rates.set(this.retina.rates);
+    const viz = this.viz; this.viz = new Float32Array(this.d.n);
+    const out = {
+      type: "state", ball: { x: st.ball.x, y: st.ball.y }, fly: st.fly.x, you: st.you.x,
+      mode: st.mode, running: st.running, gain: st.gain, coach: st.coach, sparse: st.sparse,
+      dn: st.dn.slice(), turn: st.turn, view: { az: st.view.az, size: st.view.size }, da: st.da,
+      score: { you: st.score.you, fly: st.score.fly }, ff: st.ff, simRate: this.simRate,
+      facedTotal: st.facedTotal, returnedTotal: st.returnedTotal, recent: st.recent.slice(),
+      rates, viz,
+    };
+    if (this.blocksVersion !== this.blocksSent) { out.blocks = st.blocks.slice(); this.blocksSent = this.blocksVersion; }
+    this.snapCount++;
+    if (this.multDirty && this.snapCount - this.lastMultSnap >= 30) {        // about twice a second while learning
+      out.syn = this.plast.changed(); out.mult = this.plast.mult.slice();
+      this.multDirty = false; this.lastMultSnap = this.snapCount;
+    } else if (this.snapCount === 1) {
+      out.syn = this.plast.changed();
+    }
+    return out;
+  }
+}
 
-const state = {
-  mode: "practice", running: true, gain: 120, coach: false, sparse: false,
-  ball: { x: 0.5, y: 0.2, vx: 0, vy: 1, speed: CFG.speed0 },
-  fly: { x: 0.5, v: 0 }, you: { x: 0.5, target: null },
-  dn: new Float64Array(4), turn: 0, view: { az: 0, size: 2 },
-  score: { you: 0, fly: 0 }, faced: [], blocks: [], blockStartNaive: [],
-  da: 0, rbar: 0, keys: { l: false, r: false }, ff: 0, simRate: 1,
-  vizCounts: new Float32Array(DATA.n),
+G.FlyEngine = { CFG, LEARN, Brain, Retina, Plasticity, Sim, mulberry32 };
+})(typeof self !== "undefined" ? self : this);
+</script>
+<script>
+(() => {
+"use strict";
+const DATA = window.FLYPONG_CIRCUIT;
+const E = window.FlyEngine, CFG = E.CFG;
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const CHANCE = 0.24;   // return rate of a motionless paddle (measured offline, 3 x 5 min)
+const reduceMotion = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// The world keeps the fly at y = H looking toward y = 0 (as validated). You face the fly across the
+// table, so the view is rotated 180 degrees: your paddle at the bottom, the fly's at the top.
+const sx = (x) => CFG.W - x;
+const sy = (y) => CFG.H - y;
+
+// ------------------------------------------------------------------ engine: background thread, page fallback
+let S = null;                                  // latest state from the simulation
+const vizAcc = new Float32Array(DATA.n);       // spikes received but not yet drawn
+let blocks = [], syn = { up: 0, down: 0, total: 0 }, lastMult = null, scoreKey = "";
+let engine = null;
+
+function onState(s) {
+  S = s;
+  const v = s.viz;
+  for (let i = 0; i < v.length; i++) if (v[i]) vizAcc[i] += v[i];
+  if (s.blocks) { blocks = s.blocks; drawCurve(); }
+  if (s.syn) syn = s.syn;
+  if (s.mult) lastMult = s.mult;
+  const k = s.score.you + ":" + s.score.fly;
+  if (k !== scoreKey) { scoreKey = k; updateScore(); }
+}
+
+function startOnPage(snap) {
+  const sim = new E.Sim(DATA, snap);
+  engine = { kind: "page", sim, acc: 0, simMs: 0, wallMs: 0, send: (m) => sim.command(m) };
+}
+function runOnPage(el) {                        // fallback: never more than 8 ms of simulation per frame
+  const sim = engine.sim, st = sim.st, t0 = performance.now();
+  let ticks = 0;
+  if (st.running) {
+    if (st.ff > 0) { while (st.ff > 0 && performance.now() - t0 < 10) { sim.tick(); st.ff--; ticks++; } engine.acc = 0; }
+    else {
+      engine.acc += el;
+      while (engine.acc >= CFG.tickMs && performance.now() - t0 < 8) { sim.tick(); engine.acc -= CFG.tickMs; ticks++; }
+      if (engine.acc > 50) engine.acc = 0;       // can't keep up: run in slow motion rather than freeze
+    }
+    engine.simMs += ticks * CFG.tickMs; engine.wallMs += el;
+    if (engine.wallMs >= 1000) { sim.simRate = engine.simMs / engine.wallMs; engine.simMs = engine.wallMs = 0; }
+  }
+  onState(sim.snapshot());
+}
+
+const WORKER_LOOP = `
+let sim = null, last = 0, acc = 0, lastPost = 0, simMs = 0, wallMs = 0;
+self.onmessage = (e) => {
+  const m = e.data;
+  if (m.type === "init") { sim = new FlyEngine.Sim(m.data, m.snap); last = performance.now(); loop(); return; }
+  if (sim) sim.command(m);
 };
-const rng = mulberry32(12345);
+function loop() {
+  const now = performance.now(), el = Math.min(250, now - last); last = now;
+  const st = sim.st; let ticks = 0;
+  if (st.running) {
+    if (st.ff > 0) { while (st.ff > 0 && performance.now() - now < 24) { sim.tick(); st.ff--; ticks++; } acc = 0; }
+    else { acc += el; while (acc >= 10 && performance.now() - now < 30) { sim.tick(); acc -= 10; ticks++; } if (acc > 50) acc = 0; }
+    simMs += ticks * 10; wallMs += el;
+    if (wallMs >= 1000) { sim.simRate = simMs / wallMs; simMs = 0; wallMs = 0; }
+  } else { acc = 0; simMs = 0; wallMs = 0; }
+  if (now - lastPost >= 15) { lastPost = now; const s = sim.snapshot(); self.postMessage(s, [s.viz.buffer, s.rates.buffer]); }
+  setTimeout(loop, 2);
+}`;
 
-function serve(towards) {
-  const b = state.ball;
-  b.speed = CFG.speed0;
-  const ang = (rng() * 2 - 1) * 0.5;
-  if (state.mode === "practice" || towards === "fly") {
-    b.x = 0.25 + rng() * 0.5; b.y = state.mode === "practice" ? 0.1 : CFG.H / 2;
-    b.vx = Math.sin(ang); b.vy = Math.cos(ang);
-  } else {
-    b.x = 0.25 + rng() * 0.5; b.y = CFG.H / 2;
-    b.vx = Math.sin(ang); b.vy = -Math.cos(ang);
-  }
+function startEngine(snap) {
+  let worker = null;
+  try {
+    const src = $("engine").textContent + "\n" + WORKER_LOOP;
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+  } catch (err) { worker = null; }
+  if (!worker) { startOnPage(snap); return; }
+  engine = { kind: "worker", send: (m) => worker.postMessage(m) };
+  let alive = false;
+  worker.onmessage = (e) => { alive = true; onState(e.data); };
+  const fallBack = () => { if (engine.kind === "worker" && !alive) { worker.terminate(); startOnPage(snap); } };
+  worker.onerror = fallBack;
+  setTimeout(fallBack, 2500);
+  worker.postMessage({ type: "init", data: DATA, snap });
 }
 
-function recordFly(returned) {
-  state.faced.push(returned ? 1 : 0);
-  if (state.faced.length % 10 === 0) {
-    const last = state.faced.slice(-10);
-    state.blocks.push({ r: last.reduce((a, b) => a + b, 0), gain: state.gain, trained: state.coach || state.sparse });
-    if (state.blocks.length > 60) state.blocks.shift();
-    drawCurve();
-  }
-  if (state.sparse) {
-    const r = returned ? 1 : -1;
-    const da = r - state.rbar;
-    state.rbar += 0.1 * (r - state.rbar);
-    plast.apply(da, LEARN.etaSparse);
-    pulseDA(da);
-  }
-}
-
-function tick() {
-  const b = state.ball, fly = state.fly, dtS = CFG.tickMs / 1000;
-  // what the fly sees: the ball's direction and apparent size, relative to its heading (up)
-  const dx = b.x - fly.x, dy = (CFG.H - 0.02) - b.y;
-  const az = Math.atan2(dx, Math.max(dy, 1e-3)) * DEG;
-  const dist = Math.hypot(dx, dy);
-  const size = 2 * Math.atan(CFG.ballR / Math.max(dist, 1e-3)) * DEG;
-  state.view.az = az; state.view.size = size;
-  const rates = retina.update(az, size, state.gain);
-  brain.block(CFG.stepsPerTick, rates);
-  const c = brain.counts;
-  const viz = state.vizCounts;
-  for (let i = 0; i < brain.n; i++) if (c[i]) viz[i] += c[i];
-  // steering readout: right minus left
-  const k = 1000 / CFG.tickMs, a = Math.exp(-CFG.tickMs / CFG.tauDn), dn = state.dn;
-  const raw = [c[S.DNa02_L] * k, c[S.DNa02_R] * k, c[S.DNa01_L] * k, c[S.DNa01_R] * k];
-  for (let j = 0; j < 4; j++) dn[j] = a * dn[j] + (1 - a) * raw[j];
-  state.turn = (dn[1] - dn[0]) + CFG.beta01 * (dn[3] - dn[2]);
-  fly.v = clamp(CFG.K * state.turn, -CFG.vMax, CFG.vMax);
-  fly.x = clamp(fly.x + fly.v * dtS, CFG.paddleHalf, CFG.W - CFG.paddleHalf);
-  // learning
-  plast.frame(c, CFG.tickMs);
-  if (state.coach) {
-    const toward = Math.sign(b.x - fly.x) * fly.v / CFG.vMax;
-    plast.apply(toward, LEARN.etaCoach);
-    state.da = 0.85 * state.da + 0.15 * toward;
-  } else {
-    state.da *= 0.9;
-  }
-  // your paddle
-  if (state.mode === "play") {
-    const you = state.you;
-    let vx = 0;
-    if (state.keys.l || state.keys.r) vx = (state.keys.r - state.keys.l) * CFG.playerVMax;
-    else if (you.target !== null) vx = clamp((you.target - you.x) / dtS, -CFG.playerVMax, CFG.playerVMax);
-    you.x = clamp(you.x + vx * dtS, CFG.paddleHalf, CFG.W - CFG.paddleHalf);
-  }
-  // ball
-  const sp = b.speed * CFG.H;
-  b.x += b.vx * sp * dtS; b.y += b.vy * sp * dtS;
-  if (b.x < CFG.ballR) { b.x = CFG.ballR; b.vx = Math.abs(b.vx); }
-  if (b.x > CFG.W - CFG.ballR) { b.x = CFG.W - CFG.ballR; b.vx = -Math.abs(b.vx); }
-  if (b.vy < 0 && b.y <= CFG.paddleY) {
-    if (state.mode === "practice") {
-      const ang = (rng() * 2 - 1) * 0.7;
-      b.vx = Math.sin(ang); b.vy = Math.cos(ang); b.y = CFG.paddleY;
-    } else if (Math.abs(b.x - state.you.x) <= CFG.paddleHalf + CFG.ballR) {
-      const ang = 0.6 * (b.x - state.you.x) / CFG.paddleHalf;
-      b.vx = Math.sin(ang); b.vy = Math.cos(ang); b.y = CFG.paddleY;
-      b.speed = Math.min(b.speed * CFG.speedUp, CFG.speedMax);
-    } else {
-      state.score.fly++; updateScore(); serve("you");
-    }
-  }
-  if (b.vy > 0 && b.y >= CFG.H - CFG.paddleY) {
-    if (Math.abs(b.x - fly.x) <= CFG.paddleHalf + CFG.ballR) {
-      const ang = 0.6 * (b.x - fly.x) / CFG.paddleHalf;
-      b.vx = Math.sin(ang); b.vy = -Math.cos(ang); b.y = CFG.H - CFG.paddleY;
-      b.speed = Math.min(b.speed * CFG.speedUp, CFG.speedMax);
-      recordFly(true);
-    } else {
-      recordFly(false);
-      if (state.mode === "play") { state.score.you++; updateScore(); serve("fly"); }
-      else serve("fly");
-    }
-  }
-}
-
-// ------------------------------------------------------------------ rendering: LED arena
+// ------------------------------------------------------------------ rendering: LED arena (your view)
 const arena = $("arena"), actx = arena.getContext("2d");
-const LED = { cols: 44, rows: 62, level: null, bg: null, cell: 10, dpr: 1 };
-LED.level = new Float32Array(LED.cols * LED.rows);
+const LED = { cols: 44, rows: 62, level: new Float32Array(44 * 62), bg: null, sprite: null };
 function sizeArena() {
   const r = arena.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  arena.width = Math.round(r.width * dpr); arena.height = Math.round(r.width * 1.4 * dpr);
-  LED.dpr = dpr; LED.cell = arena.width / LED.cols;
-  const bg = document.createElement("canvas");
-  bg.width = arena.width; bg.height = arena.height;
+  arena.width = Math.max(1, Math.round(r.width * dpr)); arena.height = Math.max(1, Math.round(r.width * 1.4 * dpr));
+  const cellX = arena.width / LED.cols, cellY = arena.height / LED.rows, rad = Math.min(cellX, cellY) * 0.34;
+  const bg = document.createElement("canvas"); bg.width = arena.width; bg.height = arena.height;
   const g = bg.getContext("2d");
   g.fillStyle = "#070b09"; g.fillRect(0, 0, bg.width, bg.height);
-  g.fillStyle = "#14211a";
-  const rad = LED.cell * 0.3;
+  g.fillStyle = "#14211a"; g.beginPath();
   for (let y = 0; y < LED.rows; y++) for (let x = 0; x < LED.cols; x++) {
-    g.beginPath(); g.arc((x + 0.5) * LED.cell, (y + 0.5) * LED.cell * (arena.height / LED.rows) / LED.cell, rad, 0, 7); g.fill();
+    const cx = (x + 0.5) * cellX, cy = (y + 0.5) * cellY;
+    g.moveTo(cx + rad * 0.9, cy); g.arc(cx, cy, rad * 0.9, 0, 7);
   }
+  g.fill();
   LED.bg = bg;
+  // one lit LED (glow + core), drawn with alpha = brightness
+  const s = Math.ceil(rad * 4.6), sp = document.createElement("canvas"); sp.width = sp.height = s;
+  const sg = sp.getContext("2d");
+  sg.fillStyle = "#a6ff6e";
+  sg.globalAlpha = 0.22; sg.beginPath(); sg.arc(s / 2, s / 2, rad * 2.1, 0, 7); sg.fill();
+  sg.globalAlpha = 1; sg.beginPath(); sg.arc(s / 2, s / 2, rad, 0, 7); sg.fill();
+  LED.sprite = sp;
 }
-function lightRect(x0, x1, y0, y1, lvl) {
+function lightRect(x0, x1, y0, y1, lvl) {        // screen coordinates in field units
   const cw = CFG.W / LED.cols, ch = CFG.H / LED.rows;
   for (let r = Math.max(0, Math.floor(y0 / ch)); r <= Math.min(LED.rows - 1, Math.floor(y1 / ch)); r++)
     for (let q = Math.max(0, Math.floor(x0 / cw)); q <= Math.min(LED.cols - 1, Math.floor(x1 / cw)); q++) {
       const cx = (q + 0.5) * cw;
-      if (cx >= x0 && cx <= x1) { const i = r * LED.cols + q; LED.level[i] = Math.max(LED.level[i], lvl); }
+      if (cx >= x0 && cx <= x1) { const i = r * LED.cols + q; if (lvl > LED.level[i]) LED.level[i] = lvl; }
     }
 }
 function drawArena(dtMs) {
   const lv = LED.level, dec = Math.exp(-dtMs / 55);
   for (let i = 0; i < lv.length; i++) lv[i] *= dec;
-  const cw = CFG.W / LED.cols, ch = CFG.H / LED.rows;
-  // ball
-  const b = state.ball, R = CFG.ballR * 1.25;
-  for (let r = Math.max(0, Math.floor((b.y - R) / ch) - 1); r <= Math.min(LED.rows - 1, Math.floor((b.y + R) / ch) + 1); r++)
-    for (let q = Math.max(0, Math.floor((b.x - R) / cw) - 1); q <= Math.min(LED.cols - 1, Math.floor((b.x + R) / cw) + 1); q++) {
-      const d = Math.hypot((q + 0.5) * cw - b.x, (r + 0.5) * ch - b.y);
+  const cw = CFG.W / LED.cols, ch = CFG.H / LED.rows, P = CFG.paddleY;
+  const bx = sx(S.ball.x), by = sy(S.ball.y), R = CFG.ballR * 1.25;
+  for (let r = Math.max(0, Math.floor((by - R) / ch) - 1); r <= Math.min(LED.rows - 1, Math.floor((by + R) / ch) + 1); r++)
+    for (let q = Math.max(0, Math.floor((bx - R) / cw) - 1); q <= Math.min(LED.cols - 1, Math.floor((bx + R) / cw) + 1); q++) {
+      const d = Math.hypot((q + 0.5) * cw - bx, (r + 0.5) * ch - by);
       const l = clamp(1 - (d - CFG.ballR) / cw, 0, 1);
       const i = r * LED.cols + q; if (l > lv[i]) lv[i] = l;
     }
-  // paddles
-  lightRect(state.fly.x - CFG.paddleHalf, state.fly.x + CFG.paddleHalf, CFG.H - CFG.paddleY - ch * 0.4, CFG.H - CFG.paddleY + ch * 0.9, 1);
-  if (state.mode === "play") lightRect(state.you.x - CFG.paddleHalf, state.you.x + CFG.paddleHalf, CFG.paddleY - ch * 0.9, CFG.paddleY + ch * 0.4, 0.85);
-  else lightRect(0, CFG.W, CFG.paddleY - ch * 0.9, CFG.paddleY - ch * 0.2, 0.28);
-  // centre line
-  for (let q = 1; q < LED.cols; q += 3) { const i = Math.floor(LED.rows / 2) * LED.cols + q; lv[i] = Math.max(lv[i], 0.12); }
+  const fx = sx(S.fly), yx = sx(S.you);
+  lightRect(fx - CFG.paddleHalf, fx + CFG.paddleHalf, P - ch * 0.9, P + ch * 0.4, 1);                    // the fly, top
+  if (S.mode === "play") lightRect(yx - CFG.paddleHalf, yx + CFG.paddleHalf, CFG.H - P - ch * 0.4, CFG.H - P + ch * 0.9, 0.85);  // you, bottom
+  else lightRect(0, CFG.W, CFG.H - P + ch * 0.2, CFG.H - P + ch * 0.9, 0.28);                            // practice wall, bottom
+  for (let q = 1; q < LED.cols; q += 3) { const i = Math.floor(LED.rows / 2) * LED.cols + q; if (lv[i] < 0.12) lv[i] = 0.12; }
 
-  const W = arena.width, H = arena.height, cellX = W / LED.cols, cellY = H / LED.rows;
+  const W = arena.width, H = arena.height, cellX = W / LED.cols, cellY = H / LED.rows, sp = LED.sprite, half = sp.width / 2;
+  actx.globalAlpha = 1;
   actx.drawImage(LED.bg, 0, 0);
-  const rad = Math.min(cellX, cellY) * 0.34;
-  actx.fillStyle = "#a6ff6e";
   for (let r = 0; r < LED.rows; r++) for (let q = 0; q < LED.cols; q++) {
     const l = lv[r * LED.cols + q];
     if (l < 0.03) continue;
-    const x = (q + 0.5) * cellX, y = (r + 0.5) * cellY;
-    actx.globalAlpha = l * 0.22; actx.beginPath(); actx.arc(x, y, rad * 2.1, 0, 7); actx.fill();
-    actx.globalAlpha = Math.min(1, 0.25 + l); actx.beginPath(); actx.arc(x, y, rad, 0, 7); actx.fill();
+    actx.globalAlpha = Math.min(1, 0.25 + l);
+    actx.drawImage(sp, (q + 0.5) * cellX - half, (r + 0.5) * cellY - half);
   }
-  actx.globalAlpha = 1;
-  // fly marker under its paddle: a small body with two wings, kept inside the field
-  const fx = state.fly.x / CFG.W * W, fy = (CFG.H - CFG.paddleY) / CFG.H * H + cellY * 1.25;
+  // the fly behind its paddle: body and two wings
+  const gx = fx / CFG.W * W, gy = P / CFG.H * H - cellY * 1.25;
   actx.fillStyle = "#a6ff6e"; actx.globalAlpha = 0.9;
-  actx.beginPath(); actx.ellipse(fx, fy, cellX * 0.38, cellY * 0.55, 0, 0, 7); actx.fill();
+  actx.beginPath(); actx.ellipse(gx, gy, cellX * 0.38, cellY * 0.55, 0, 0, 7); actx.fill();
   actx.globalAlpha = 0.45;
-  actx.beginPath(); actx.ellipse(fx - cellX * 0.8, fy + cellY * 0.1, cellX * 0.7, cellY * 0.3, -0.5, 0, 7); actx.fill();
-  actx.beginPath(); actx.ellipse(fx + cellX * 0.8, fy + cellY * 0.1, cellX * 0.7, cellY * 0.3, 0.5, 0, 7); actx.fill();
+  actx.beginPath(); actx.ellipse(gx - cellX * 0.8, gy - cellY * 0.1, cellX * 0.7, cellY * 0.3, 0.5, 0, 7); actx.fill();
+  actx.beginPath(); actx.ellipse(gx + cellX * 0.8, gy - cellY * 0.1, cellX * 0.7, cellY * 0.3, -0.5, 0, 7); actx.fill();
   actx.globalAlpha = 1;
 }
 
-// ------------------------------------------------------------------ rendering: brain
+// ------------------------------------------------------------------ rendering: brain (front view, as you face the fly)
 const brainC = $("brain"), bctx = brainC.getContext("2d");
-const SIL = DATA.silhouette;
-const NEU = DATA.neurons;
-const ROLE = NEU.role;
+const SIL = DATA.silhouette, NEU = DATA.neurons, ROLE = NEU.role, ST = DATA.steer;
 const trace = new Float32Array(DATA.n);
-let brainScale = null, silCanvas = null;
+let brainScale = null, brainRest = null, dotSprites = null;
 const roleStyle = {
   lc10a: { c: "#46a13c", r: 1.7, base: 0.55 },
   aotu: { c: "#3a8fe0", r: 3.6, base: 0.9 },
@@ -871,29 +1037,38 @@ const roleStyle = {
   dn: { c: "#56625b", r: 1.5, base: 0.5 },
   other: { c: "#56625b", r: 1.3, base: 0.42 },
 };
+const bx = (x) => (SIL.x1 - x) * brainScale.sx;   // mirrored: the fly's right side on your left
+const by = (y) => (y - SIL.y0) * brainScale.sy;
+const labelSpots = (() => {
+  const pick = (f) => { let a = 0, b = 0, n = 0; for (let i = 0; i < DATA.n; i++) if (f(i)) { a += NEU.x[i]; b += NEU.y[i]; n++; } return [a / n, b / n]; };
+  return [
+    { t: "LC10a · left eye", s: "left eye", p: pick((i) => ROLE[i] === "lc10a" && NEU.side[i] === "left"), dy: 30 },
+    { t: "LC10a · right eye", s: "right eye", p: pick((i) => ROLE[i] === "lc10a" && NEU.side[i] === "right"), dy: 30 },
+    { t: "DNa02", s: "DNa02", p: [NEU.x[ST.DNa02_L], NEU.y[ST.DNa02_L]], dy: -14 },
+    { t: "DNa02", s: "DNa02", p: [NEU.x[ST.DNa02_R], NEU.y[ST.DNa02_R]], dy: -14 },
+  ];
+})();
 function sizeBrain() {
   const r = brainC.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const aspect = (SIL.x1 - SIL.x0) / (SIL.y1 - SIL.y0);
-  const h = r.width / aspect;
+  const h = r.width / ((SIL.x1 - SIL.x0) / (SIL.y1 - SIL.y0));
   brainC.style.height = h + "px";
-  brainC.width = Math.round(r.width * dpr); brainC.height = Math.round(h * dpr);
+  brainC.width = Math.max(1, Math.round(r.width * dpr)); brainC.height = Math.max(1, Math.round(h * dpr));
   brainScale = { dpr, sx: brainC.width / (SIL.x1 - SIL.x0), sy: brainC.height / (SIL.y1 - SIL.y0) };
-  // silhouette from the density of all 139k neuron anchor points
+  // silhouette from the density of all 139k neuron anchor points, mirrored like the dots
   const off = document.createElement("canvas"); off.width = SIL.nx; off.height = SIL.ny;
   const og = off.getContext("2d"), img = og.createImageData(SIL.nx, SIL.ny);
-  for (let i = 0; i < SIL.v.length; i++) {
-    const v = SIL.v[i] / 255;
-    img.data[i * 4] = 90; img.data[i * 4 + 1] = 118; img.data[i * 4 + 2] = 100; img.data[i * 4 + 3] = Math.round(Math.pow(v, 1.4) * 70);
+  for (let yy = 0; yy < SIL.ny; yy++) for (let xx = 0; xx < SIL.nx; xx++) {
+    const v = SIL.v[yy * SIL.nx + xx] / 255, o = (yy * SIL.nx + (SIL.nx - 1 - xx)) * 4;
+    img.data[o] = 90; img.data[o + 1] = 118; img.data[o + 2] = 100; img.data[o + 3] = Math.round(Math.pow(v, 1.4) * 70);
   }
   og.putImageData(img, 0, 0);
-  silCanvas = off;
-  // the resting brain (silhouette, every neuron at rest, labels) is drawn once per resize
+  // the resting brain is drawn once per resize
   const rest = document.createElement("canvas"); rest.width = brainC.width; rest.height = brainC.height;
   const rg = rest.getContext("2d");
   rg.fillStyle = "#070b09"; rg.fillRect(0, 0, rest.width, rest.height);
   rg.imageSmoothingEnabled = true;
-  rg.drawImage(silCanvas, 0, 0, rest.width, rest.height);
+  rg.drawImage(off, 0, 0, rest.width, rest.height);
   for (const role of ["other", "dn", "lc10a", "aotu", "steer"]) {
     const st = roleStyle[role];
     rg.fillStyle = st.c; rg.globalAlpha = st.base; rg.beginPath();
@@ -910,42 +1085,37 @@ function sizeBrain() {
   rg.textAlign = "center"; rg.fillStyle = "#8a988f";
   for (const l of labelSpots) rg.fillText(small ? l.s : l.t, bx(l.p[0]), by(l.p[1]) + l.dy * dpr * (small ? 0.8 : 1));
   brainRest = rest;
+  // firing-dot sprites per role
+  dotSprites = {};
+  for (const role of Object.keys(roleStyle)) {
+    const st = roleStyle[role], rad = (st.r + 4) * dpr, s = Math.ceil(rad * 2 + 2), c = document.createElement("canvas");
+    c.width = c.height = s;
+    const cg = c.getContext("2d"), col = role === "other" || role === "dn" ? "#d9e6dc" : st.c;
+    cg.fillStyle = col;
+    cg.globalAlpha = 0.25; cg.beginPath(); cg.arc(s / 2, s / 2, rad, 0, 7); cg.fill();
+    cg.globalAlpha = 1; cg.beginPath(); cg.arc(s / 2, s / 2, (st.r + 0.6) * dpr, 0, 7); cg.fill();
+    dotSprites[role] = c;
+  }
 }
-let brainRest = null;
-function bx(x) { return (x - SIL.x0) * brainScale.sx; }
-function by(y) { return (y - SIL.y0) * brainScale.sy; }
-const labelSpots = (() => {
-  const pick = (f) => { let sx = 0, sy = 0, n = 0; for (let i = 0; i < DATA.n; i++) if (f(i)) { sx += NEU.x[i]; sy += NEU.y[i]; n++; } return [sx / n, sy / n]; };
-  return [
-    { t: "LC10a · left eye", s: "left eye", p: pick((i) => ROLE[i] === "lc10a" && NEU.side[i] === "left"), dy: 30 },
-    { t: "LC10a · right eye", s: "right eye", p: pick((i) => ROLE[i] === "lc10a" && NEU.side[i] === "right"), dy: 30 },
-    { t: "DNa02", s: "DNa02", p: [NEU.x[S.DNa02_L], NEU.y[S.DNa02_L]], dy: -14 },
-    { t: "DNa02", s: "DNa02", p: [NEU.x[S.DNa02_R], NEU.y[S.DNa02_R]], dy: -14 },
-  ];
-})();
+let firingShown = -1;
 function drawBrain(dtMs) {
-  if (!brainScale || !brainRest) return;
-  const dpr = brainScale.dpr;
-  const dec = Math.exp(-dtMs / 90), viz = state.vizCounts;
+  if (!brainRest) return;
+  const dec = Math.exp(-dtMs / 90);
   let firing = 0;
-  for (let i = 0; i < DATA.n; i++) { trace[i] = trace[i] * dec + viz[i] * 0.55; viz[i] = 0; if (trace[i] > 0.25) firing++; }
+  for (let i = 0; i < DATA.n; i++) { trace[i] = trace[i] * dec + vizAcc[i] * 0.55; vizAcc[i] = 0; if (trace[i] > 0.25) firing++; }
   bctx.globalAlpha = 1;
   bctx.drawImage(brainRest, 0, 0);
-  // active dots
   for (let i = 0; i < DATA.n; i++) {
     const tr = trace[i];
     if (tr < 0.05) continue;
-    const st = roleStyle[ROLE[i]], x = bx(NEU.x[i]), y = by(NEU.y[i]);
-    const a = Math.min(1, tr);
-    const col = ROLE[i] === "other" || ROLE[i] === "dn" ? "#d9e6dc" : st.c;
-    bctx.fillStyle = col; bctx.globalAlpha = a * 0.25;
-    bctx.beginPath(); bctx.arc(x, y, (st.r + 4) * dpr, 0, 7); bctx.fill();
-    bctx.globalAlpha = Math.min(1, 0.4 + a);
-    bctx.beginPath(); bctx.arc(x, y, (st.r + 0.6) * dpr, 0, 7); bctx.fill();
+    const sp = dotSprites[ROLE[i]], h = sp.width / 2;
+    bctx.globalAlpha = Math.min(1, 0.3 + tr);
+    bctx.drawImage(sp, bx(NEU.x[i]) - h, by(NEU.y[i]) - h);
   }
   bctx.globalAlpha = 1;
-  $("brainStatus").textContent = `${firing} of ${DATA.n.toLocaleString()} neurons firing`;
+  if (firing !== firingShown) { firingShown = firing; $("brainStatus").textContent = `${firing} of ${DATA.n.toLocaleString()} neurons firing`; }
 }
+
 // tooltips: hover with a mouse, tap on a touch screen; kept inside their panel
 const tipTimers = new Map();
 function placeTip(tip, wrapEl, clientX, clientY, html, touch) {
@@ -958,6 +1128,7 @@ function placeTip(tip, wrapEl, clientX, clientY, html, touch) {
   if (touch) tipTimers.set(tip, setTimeout(() => { tip.hidden = true; }, 3000));
 }
 function brainTip(ev) {
+  if (!brainScale) return;
   const touch = ev.pointerType !== "mouse";
   const r = brainC.getBoundingClientRect(), dpr = brainScale.dpr;
   const mx = (ev.clientX - r.left) * dpr, my = (ev.clientY - r.top) * dpr;
@@ -976,84 +1147,103 @@ brainC.addEventListener("pointermove", (ev) => { if (ev.pointerType === "mouse")
 brainC.addEventListener("pointerdown", brainTip);
 brainC.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse") $("brainTip").hidden = true; });
 
-// ------------------------------------------------------------------ rendering: eyes
-const eyeCanvases = [$("eyeL"), $("eyeR")];
+// ------------------------------------------------------------------ rendering: eyes (front view)
+const EYES = [
+  { c: $("eyeA"), right: 1, lo: -15, hi: 150 },     // the fly's right eye, on your left
+  { c: $("eyeB"), right: 0, lo: -150, hi: 15 },     // the fly's left eye, on your right
+];
+const LCAZ = DATA.lc10a.azimuth, LCEL = DATA.lc10a.elevation, LCRIGHT = DATA.lc10a.side.map((s) => (s === "right" ? 1 : 0));
 function sizeEyes() {
-  for (const c of eyeCanvases) {
-    const r = c.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
-    c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
-  }
-}
-function drawEyes() {
-  const rates = retina.rates, gmax = 150;
-  eyeCanvases.forEach((c, side) => {
-    const g = c.getContext("2d"), W = c.width, H = c.height;
-    const azMin = side ? -15 : -150, azMax = side ? 150 : 15;
-    const X = (az) => (az - azMin) / (azMax - azMin) * W, Y = (el) => (1 - (el + 60) / 130) * H;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  for (const e of EYES) {
+    const r = e.c.getBoundingClientRect();
+    e.c.width = Math.max(1, Math.round(r.width * dpr)); e.c.height = Math.max(1, Math.round(r.height * dpr));
+    const W = e.c.width, H = e.c.height;
+    e.X = (az) => (e.hi - az) / (e.hi - e.lo) * W;
+    e.Y = (el) => (1 - (el + 60) / 130) * H;
+    e.rr = Math.max(2, W / 60);
+    const base = document.createElement("canvas"); base.width = W; base.height = H;
+    const g = base.getContext("2d");
     g.fillStyle = "#070b09"; g.fillRect(0, 0, W, H);
     g.strokeStyle = "#223027"; g.lineWidth = 1; g.setLineDash([3, 3]);
-    g.beginPath(); g.moveTo(0, Y(0)); g.lineTo(W, Y(0)); g.moveTo(X(0), 0); g.lineTo(X(0), H); g.stroke(); g.setLineDash([]);
-    const rr = Math.max(2, W / 60);
-    for (let k = 0; k < retina.n; k++) {
-      if (retina.right[k] !== side) continue;
-      const x = X(retina.azDeg[k]), y = Y(retina.el[k]), a = rates[k] / gmax;
-      g.globalAlpha = 1; g.fillStyle = "#14211a"; g.beginPath(); g.arc(x, y, rr, 0, 7); g.fill();
-      if (a > 0.02) { g.globalAlpha = Math.min(1, a * 1.3); g.fillStyle = "#a6ff6e"; g.beginPath(); g.arc(x, y, rr * 1.15, 0, 7); g.fill(); }
+    g.beginPath(); g.moveTo(0, e.Y(0)); g.lineTo(W, e.Y(0)); g.moveTo(e.X(0), 0); g.lineTo(e.X(0), H); g.stroke(); g.setLineDash([]);
+    g.fillStyle = "#14211a"; g.beginPath();
+    for (let k = 0; k < LCAZ.length; k++) {
+      if (LCRIGHT[k] !== e.right) continue;
+      const x = e.X(LCAZ[k]), y = e.Y(LCEL[k]);
+      g.moveTo(x + e.rr, y); g.arc(x, y, e.rr, 0, 7);
+    }
+    g.fill();
+    g.fillStyle = "#8a988f"; g.font = `${Math.round(W / 22)}px "IBM Plex Mono", monospace`;
+    g.textAlign = e.right ? "right" : "left";
+    g.fillText("front", e.right ? e.X(0) - 4 : e.X(0) + 4, H - 5);
+    e.base = base;
+  }
+}
+let ballReadShown = "";
+function drawEyes() {
+  const rates = S.rates, gmax = 150;
+  for (const e of EYES) {
+    const g = e.c.getContext("2d");
+    g.globalAlpha = 1;
+    g.drawImage(e.base, 0, 0);
+    g.fillStyle = "#a6ff6e";
+    for (let k = 0; k < LCAZ.length; k++) {
+      if (LCRIGHT[k] !== e.right) continue;
+      const a = rates[k] / gmax;
+      if (a <= 0.02) continue;
+      g.globalAlpha = Math.min(1, a * 1.3);
+      g.beginPath(); g.arc(e.X(LCAZ[k]), e.Y(LCEL[k]), e.rr * 1.15, 0, 7); g.fill();
     }
     g.globalAlpha = 1;
-    const az = state.view.az;
-    if (az >= azMin && az <= azMax) {
-      g.strokeStyle = "#d8e2da"; g.lineWidth = Math.max(1, W / 220);
-      g.beginPath(); g.arc(X(az), Y(0), Math.max(4, state.view.size / (azMax - azMin) * W / 2 + 3), 0, 7); g.stroke();
+    const az = S.view.az;
+    if (az >= e.lo && az <= e.hi) {
+      g.strokeStyle = "#d8e2da"; g.lineWidth = Math.max(1, e.c.width / 220);
+      g.beginPath(); g.arc(e.X(az), e.Y(0), Math.max(4, S.view.size / (e.hi - e.lo) * e.c.width / 2 + 3), 0, 7); g.stroke();
     }
-    g.fillStyle = "#8a988f"; g.font = `${Math.round(W / 22)}px "IBM Plex Mono", monospace`;
-    g.textAlign = side ? "left" : "right";
-    g.fillText("front", side ? X(0) + 4 : X(0) - 4, H - 5);
-  });
-  $("ballRead").textContent = `ball at ${state.view.az >= 0 ? "+" : ""}${state.view.az.toFixed(0)}° · ${state.view.size.toFixed(0)}° wide`;
+  }
+  const az = Math.round(S.view.az), size = Math.round(S.view.size);
+  const t = (Math.abs(az) < 2 ? "ball dead ahead" : `ball ${Math.abs(az)}° to its ${az > 0 ? "right" : "left"}`) + ` · ${size}° wide`;
+  if (t !== ballReadShown) { ballReadShown = t; $("ballRead").textContent = t; }
 }
 
-// ------------------------------------------------------------------ rendering: meters, stats
-const padKnob = $("padKnob");
+// ------------------------------------------------------------------ meters, stats, chart
+const meterEls = { m02R: $("m02R"), m02L: $("m02L"), m01R: $("m01R"), m01L: $("m01L"), needle: $("needle"), rateR: $("rateR"), rateL: $("rateL"), turnRead: $("turnRead"), daFill: $("daFill"), padKnob: $("padKnob") };
+const shown = {};
+function setStyle(key, prop, val) { const k = key + prop; if (shown[k] !== val) { shown[k] = val; meterEls[key].style[prop] = val; } }
+function setText(key, val) { const k = key + "#"; if (shown[k] !== val) { shown[k] = val; meterEls[key].textContent = val; } }
 function updateMeters() {
-  padKnob.style.left = (state.you.x / CFG.W * 100) + "%";
-  padKnob.style.opacity = state.mode === "play" ? 1 : 0;
-  const dn = state.dn, full = 120;
-  $("m02L").style.width = Math.min(100, dn[0] / full * 100) + "%";
-  $("m02R").style.width = Math.min(100, dn[1] / full * 100) + "%";
-  $("m01L").style.width = Math.min(100, dn[2] / full * 100) + "%";
-  $("m01R").style.width = Math.min(100, dn[3] / full * 100) + "%";
-  const L = dn[0] + CFG.beta01 * dn[2], R = dn[1] + CFG.beta01 * dn[3];
-  $("rateL").textContent = `L ${L.toFixed(0)}`; $("rateR").textContent = `R ${R.toFixed(0)}`;
-  $("turnRead").textContent = `turn ${state.turn >= 0 ? "+" : ""}${state.turn.toFixed(0)}`;
-  $("needle").style.left = (50 + clamp(state.turn / 100, -1, 1) * 48) + "%";
-  const da = clamp(state.da * 2.5, -1, 1), f = $("daFill");
-  f.style.width = Math.abs(da) * 50 + "%";
-  f.style.left = da >= 0 ? "50%" : (50 - Math.abs(da) * 50) + "%";
-  f.style.background = da >= 0 ? "var(--sugar)" : "var(--heat)";
+  const dn = S.dn, full = 120, pct = (v) => Math.min(100, Math.round(v / full * 100)) + "%";
+  setStyle("m02R", "width", pct(dn[1])); setStyle("m02L", "width", pct(dn[0]));
+  setStyle("m01R", "width", pct(dn[3])); setStyle("m01L", "width", pct(dn[2]));
+  const R = Math.round(dn[1] + CFG.beta01 * dn[3]), L = Math.round(dn[0] + CFG.beta01 * dn[2]), turn = Math.round(S.turn);
+  setText("rateR", `R ${R}`); setText("rateL", `L ${L}`);
+  setText("turnRead", Math.abs(turn) < 2 ? "steer 0" : (turn > 0 ? `steer ← ${turn}` : `steer → ${-turn}`));
+  setStyle("needle", "left", (50 - clamp(S.turn / 100, -1, 1) * 48).toFixed(1) + "%");     // the fly's right = your left
+  const da = clamp(S.da * 2.5, -1, 1);
+  setStyle("daFill", "width", (Math.abs(da) * 50).toFixed(1) + "%");
+  setStyle("daFill", "left", da >= 0 ? "50%" : (50 - Math.abs(da) * 50).toFixed(1) + "%");
+  setStyle("daFill", "background", da >= 0 ? "var(--sugar)" : "var(--heat)");
+  setStyle("padKnob", "left", (sx(S.you) / CFG.W * 100).toFixed(1) + "%");
+  setStyle("padKnob", "opacity", S.mode === "play" ? "1" : "0");
 }
 function updateStats() {
-  const f = state.faced, last = f.slice(-20);
-  $("retRecent").innerHTML = last.length ? `${Math.round(100 * last.reduce((a, b) => a + b, 0) / last.length)}%<small>${last.length < 20 ? last.length + " balls so far" : ""}</small>` : "–";
-  const all = f.reduce((a, b) => a + b, 0);
-  $("retRecentK").textContent = f.length ? `fly returns, last ${Math.min(20, f.length)} balls · ${all} of ${f.length} overall` : "fly returns, last 20 balls";
-  const ch = plast.changed();
-  $("synChanged").textContent = (ch.up + ch.down).toLocaleString();
-  $("synK").textContent = `of ${plast.P.toLocaleString()} LC10a synapses changed by training · ${ch.up.toLocaleString()} stronger, ${ch.down.toLocaleString()} weaker`;
+  if (!S) return;
+  const rec = S.recent, n = rec.length, ret = rec.reduce((a, b) => a + b, 0);
+  $("retRecent").innerHTML = n ? `${Math.round(100 * ret / n)}%<small>${n < 20 ? n + " balls so far" : ""}</small>` : "–";
+  $("retRecentK").textContent = S.facedTotal ? `fly returns, last ${Math.min(20, S.facedTotal)} balls · ${S.returnedTotal} of ${S.facedTotal} overall` : "fly returns, last 20 balls";
+  $("synChanged").textContent = (syn.up + syn.down).toLocaleString();
+  $("synK").textContent = `of ${(syn.total || 10866).toLocaleString()} LC10a synapses changed by training · ${syn.up.toLocaleString()} stronger, ${syn.down.toLocaleString()} weaker`;
 }
 function updateScore() {
-  $("scoreYou").textContent = String(state.score.you).padStart(2, "0");
-  $("scoreFly").textContent = String(state.score.fly).padStart(2, "0");
+  $("scoreYou").textContent = String(S.score.you).padStart(2, "0");
+  $("scoreFly").textContent = String(S.score.fly).padStart(2, "0");
 }
-let pulseT = 0;
-function pulseDA(v) { state.da = clamp(state.da + v * 0.4, -1, 1); pulseT = 1; }
-
 const curve = $("curve");
 function drawCurve() {
   const r = curve.getBoundingClientRect(), W = Math.max(200, r.width), H = 170;
   const m = { l: 34, r: 8, t: 10, b: 22 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
-  const blocks = state.blocks, n = Math.max(blocks.length, 12);
-  const bw = iw / n, y = (v) => m.t + ih * (1 - v);
+  const n = Math.max(blocks.length, 12), bw = iw / n, y = (v) => m.t + ih * (1 - v);
   let s = `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}"/>`;
   for (const v of [0.5, 1]) s += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" opacity=".6"/>`;
   for (const v of [0, 0.5, 1]) s += `<text x="${m.l - 6}" y="${y(v) + 3.5}" text-anchor="end">${v * 100}%</text>`;
@@ -1065,16 +1255,16 @@ function drawCurve() {
   });
   s += `<line class="base" x1="${m.l}" x2="${W - m.r}" y1="${y(CHANCE)}" y2="${y(CHANCE)}"/>`;
   s += `<text x="${W - m.r}" y="${y(CHANCE) - 5}" text-anchor="end">motionless paddle ${Math.round(CHANCE * 100)}%</text>`;
-  const first = state.faced.length - blocks.length * 10;
-  s += `<text x="${m.l}" y="${H - 4}">${blocks.length ? `balls ${first + 1}–${state.faced.length}` : "a bar appears after every 10 balls the fly faces"}</text>`;
+  const lastDone = S ? Math.floor(S.facedTotal / 10) * 10 : 0, first = lastDone - blocks.length * 10 + 1;
+  s += `<text x="${m.l}" y="${H - 4}">${blocks.length ? `balls ${first}–${lastDone}` : "a bar appears after every 10 balls the fly faces"}</text>`;
   curve.setAttribute("viewBox", `0 0 ${W} ${H}`);
   curve.innerHTML = s;
 }
 function curveTip(ev) {
   const t = ev.target, tip = $("curveTip"), touch = ev.pointerType !== "mouse";
   if (!(t instanceof SVGRectElement) || !t.dataset.i) { if (!touch) tip.hidden = true; return; }
-  const i = +t.dataset.i, bk = state.blocks[i];
-  const first = state.faced.length - state.blocks.length * 10 + i * 10 + 1;
+  const i = +t.dataset.i, bk = blocks[i];
+  const lastDone = Math.floor(S.facedTotal / 10) * 10, first = lastDone - blocks.length * 10 + i * 10 + 1;
   placeTip(tip, curve.parentElement, ev.clientX, ev.clientY,
     `balls ${first}–${first + 9}: <b>${bk.r} of 10</b> returned<br>eye gain ${bk.gain}/s · ${bk.trained ? "training on" : "no training"}`, touch);
 }
@@ -1083,70 +1273,69 @@ curve.addEventListener("pointerdown", curveTip);
 curve.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse") $("curveTip").hidden = true; });
 
 // ------------------------------------------------------------------ controls
+const ui = { mode: "practice", running: true, gain: 120, coach: false, sparse: false };
 const isTouch = () => document.documentElement.classList.contains("touch") || (window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
 window.addEventListener("touchstart", () => document.documentElement.classList.add("touch"), { once: true, passive: true });
 function setMode(mode, byUser) {
-  state.mode = mode;
+  ui.mode = mode;
+  engine.send({ type: "mode", mode });
   $("modePlay").setAttribute("aria-pressed", mode === "play");
   $("modePractice").setAttribute("aria-pressed", mode === "practice");
-  $("modeCaption").textContent = mode === "play" ? "YOU (TOP) VS THE FLY" : "THE FLY PRACTISES ON A WALL";
+  $("modeCaption").textContent = mode === "play" ? "YOU (BOTTOM) VS THE FLY" : "THE FLY PRACTISES ON A WALL";
   arena.classList.toggle("playing", mode === "play");
   $("padLabel").textContent = mode === "play" ? "" : "touch here to play";
   $("hint").textContent = isTouch()
-    ? (mode === "play" ? "Slide your thumb along the pad to move your paddle, or drag on the arena." : "Tap the arena or the pad below it to take the top paddle and play against the fly.")
-    : (mode === "play" ? "Move the pointer or drag over the arena to steer your paddle. Arrow keys or A/D work too." : "Click the arena or press ← → to take the top paddle and play against the fly.");
-  $("practiceFast").disabled = false;
-  state.you.x = 0.5; state.you.target = null;
-  serve("fly");
+    ? (mode === "play" ? "Slide your thumb along the pad to move your paddle, or drag on the arena." : "Tap the arena or the pad below it to take the bottom paddle and play against the fly.")
+    : (mode === "play" ? "Move the pointer or drag over the arena to steer your paddle. Arrow keys or A/D work too." : "Click the arena or press ← → to take the bottom paddle and play against the fly.");
   if (byUser && mode === "play" && window.innerWidth <= 900) {
     const col = document.querySelector(".arena-col"), r = col.getBoundingClientRect();
-    if (r.top < -2 || r.top + col.offsetHeight > window.innerHeight + 2) {
-      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      col.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-    }
+    if (r.top < -2 || r.top + col.offsetHeight > window.innerHeight + 2) col.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
   }
 }
 function setGain(v) {
-  state.gain = +v; $("gain").value = v; $("gainVal").textContent = `${v} spikes/s`;
+  ui.gain = +v; $("gain").value = v; $("gainVal").textContent = `${v} spikes/s`;
   $("presetNaive").setAttribute("aria-pressed", +v === 45);
   $("presetCourting").setAttribute("aria-pressed", +v === 120);
 }
+function setRunning(on) { ui.running = on; engine.send({ type: "running", on }); $("pauseBtn").textContent = on ? "Pause" : "Resume"; }
 $("modePlay").onclick = () => setMode("play", true);
 $("modePractice").onclick = () => setMode("practice", true);
-$("gain").oninput = (e) => setGain(e.target.value);
-$("presetNaive").onclick = () => { setGain(45); plast.reset(); updateStats(); };
-$("presetCourting").onclick = () => setGain(120);
-$("coach").onchange = (e) => { state.coach = e.target.checked; };
-$("sparse").onchange = (e) => { state.sparse = e.target.checked; };
-$("giveSugar").onclick = () => { plast.apply(1, LEARN.etaManual); pulseDA(1); updateStats(); };
-$("giveHeat").onclick = () => { plast.apply(-1, LEARN.etaManual); pulseDA(-1); updateStats(); };
-$("resetSyn").onclick = () => { plast.reset(); updateStats(); };
-$("resetScore").onclick = () => { state.score.you = state.score.fly = 0; state.faced = []; state.blocks = []; updateScore(); updateStats(); drawCurve(); };
-$("pauseBtn").onclick = () => { state.running = !state.running; $("pauseBtn").textContent = state.running ? "Pause" : "Resume"; };
+$("gain").oninput = (e) => { setGain(e.target.value); engine.send({ type: "gain", value: +e.target.value }); };
+$("presetNaive").onclick = () => { setGain(45); engine.send({ type: "naive" }); };
+$("presetCourting").onclick = () => { setGain(120); engine.send({ type: "gain", value: 120 }); };
+$("coach").onchange = (e) => { ui.coach = e.target.checked; engine.send({ type: "coach", on: ui.coach }); };
+$("sparse").onchange = (e) => { ui.sparse = e.target.checked; engine.send({ type: "sparse", on: ui.sparse }); };
+$("giveSugar").onclick = () => engine.send({ type: "sugar" });
+$("giveHeat").onclick = () => engine.send({ type: "heat" });
+$("resetSyn").onclick = () => engine.send({ type: "resetSyn" });
+$("resetScore").onclick = () => { blocks = []; engine.send({ type: "resetScore" }); drawCurve(); };
+$("pauseBtn").onclick = () => setRunning(!ui.running);
 $("practiceFast").onclick = () => {
-  if (state.mode !== "practice") setMode("practice");
-  state.running = true; $("pauseBtn").textContent = "Pause";
-  state.ff = 6000;   // 60 s of game time
+  if (ui.mode !== "practice") setMode("practice", true);
+  if (!ui.running) setRunning(true);
+  engine.send({ type: "practiceFast", ticks: 6000 });
 };
-function fieldX(el, ev) { const r = el.getBoundingClientRect(); return clamp((ev.clientX - r.left) / r.width * CFG.W, CFG.paddleHalf, CFG.W - CFG.paddleHalf); }
+// your paddle: screen position -> field position (the view is rotated)
+function fieldX(el, ev) { const r = el.getBoundingClientRect(); return clamp(sx((ev.clientX - r.left) / r.width * CFG.W), CFG.paddleHalf, CFG.W - CFG.paddleHalf); }
+const aim = (x) => engine.send({ type: "target", x });
 let tapStart = null;
 arena.addEventListener("pointerdown", (ev) => {
-  if (ev.pointerType === "mouse" || state.mode === "play") {
-    if (state.mode !== "play") setMode("play", true);
-    state.you.target = fieldX(arena, ev);
+  if (ev.pointerType === "mouse" || ui.mode === "play") {
+    if (ui.mode !== "play") setMode("play", true);
+    aim(fieldX(arena, ev));
     arena.setPointerCapture(ev.pointerId);
   } else {
-    tapStart = { x: ev.clientX, y: ev.clientY, t: performance.now(), id: ev.pointerId };   // wait: a swipe here should scroll the page
+    tapStart = { x: ev.clientX, y: ev.clientY, t: performance.now(), id: ev.pointerId };   // a swipe here still scrolls the page
   }
 });
 arena.addEventListener("pointermove", (ev) => {
-  if (state.mode !== "play") return;
-  if (ev.pointerType === "mouse" || arena.hasPointerCapture(ev.pointerId)) state.you.target = fieldX(arena, ev);
+  if (ui.mode !== "play") return;
+  if (ev.pointerType === "mouse" || arena.hasPointerCapture(ev.pointerId)) aim(fieldX(arena, ev));
 });
 arena.addEventListener("pointerup", (ev) => {
   if (tapStart && ev.pointerId === tapStart.id && Math.hypot(ev.clientX - tapStart.x, ev.clientY - tapStart.y) < 12 && performance.now() - tapStart.t < 600) {
     setMode("play", true);
-    state.you.target = fieldX(arena, ev);
+    aim(fieldX(arena, ev));
   }
   tapStart = null;
 });
@@ -1154,82 +1343,68 @@ arena.addEventListener("pointercancel", () => { tapStart = null; });
 const pad = $("pad");
 pad.addEventListener("pointerdown", (ev) => {
   ev.preventDefault();
-  if (state.mode !== "play") setMode("play", true);
-  state.you.target = fieldX(pad, ev);
+  if (ui.mode !== "play") setMode("play", true);
+  aim(fieldX(pad, ev));
   pad.setPointerCapture(ev.pointerId);
 });
-pad.addEventListener("pointermove", (ev) => {
-  if (state.mode === "play" && pad.hasPointerCapture(ev.pointerId)) state.you.target = fieldX(pad, ev);
-});
+pad.addEventListener("pointermove", (ev) => { if (ui.mode === "play" && pad.hasPointerCapture(ev.pointerId)) aim(fieldX(pad, ev)); });
+const keys = { left: false, right: false };
+function sendDir() { engine.send({ type: "dir", dir: (keys.left ? 1 : 0) - (keys.right ? 1 : 0) }); }   // screen left = field +x
 window.addEventListener("keydown", (e) => {
-  if (e.target instanceof HTMLInputElement) return;
-  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") { state.keys.l = true; if (state.mode !== "play") setMode("play", true); e.preventDefault(); }
-  if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") { state.keys.r = true; if (state.mode !== "play") setMode("play", true); e.preventDefault(); }
+  if (e.target instanceof HTMLInputElement || e.repeat) return;
+  const left = e.key === "ArrowLeft" || e.key === "a" || e.key === "A", right = e.key === "ArrowRight" || e.key === "d" || e.key === "D";
+  if (!left && !right) return;
+  if (ui.mode !== "play") setMode("play", true);
+  keys.left = keys.left || left; keys.right = keys.right || right; sendDir(); e.preventDefault();
 });
 window.addEventListener("keyup", (e) => {
-  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") state.keys.l = false;
-  if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") state.keys.r = false;
+  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") keys.left = false;
+  else if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") keys.right = false;
+  else return;
+  sendDir();
 });
+// pause while the tab is hidden, so a phone doesn't spend battery on an unseen game
+document.addEventListener("visibilitychange", () => { if (engine) engine.send({ type: "running", on: !document.hidden && ui.running }); });
 
-// ------------------------------------------------------------------ main loop
+// ------------------------------------------------------------------ main loop (drawing only when the engine runs in a worker)
+let last = performance.now(), statT = 0, speedShown = "";
 function setSpeedCaption(text, normal) {
-  const el = $("speedCaption");
-  if (el.textContent !== text) el.textContent = text;
-  el.classList.toggle("normal", normal);
+  if (text === speedShown) return;
+  speedShown = text;
+  const el = $("speedCaption"); el.textContent = text; el.classList.toggle("normal", normal);
 }
-let last = performance.now(), acc = 0, statT = 0, simMsWindow = 0, wallMsWindow = 0;
 function loop(now) {
   const el = Math.min(100, now - last); last = now;
-  if (state.running) {
-    const t0 = performance.now();
-    let ticks = 0;
-    if (state.ff > 0) {
-      while (performance.now() - t0 < 14 && state.ff > 0) { tick(); state.ff--; ticks++; }
-      setSpeedCaption(`PRACTISING · ${Math.ceil(state.ff / 100)} S LEFT`, false);
-      if (state.ff === 0) setSpeedCaption("1× REAL TIME", true);
-    } else {
-      acc += el;
-      while (acc >= CFG.tickMs && ticks < 10) { tick(); acc -= CFG.tickMs; ticks++; }
-      if (ticks >= 10) acc = 0;
-    }
-    simMsWindow += ticks * CFG.tickMs; wallMsWindow += el;
-    if (wallMsWindow > 1000) {
-      state.simRate = simMsWindow / wallMsWindow;
-      if (state.ff === 0) setSpeedCaption(state.simRate > 0.93 ? "1× REAL TIME" : `${state.simRate.toFixed(2)}× REAL TIME · SLOW DEVICE`, state.simRate > 0.93);
-      simMsWindow = 0; wallMsWindow = 0;
-    }
+  if (engine && engine.kind === "page") runOnPage(el);
+  if (S) {
+    drawArena(el); drawBrain(el); drawEyes(); updateMeters();
+    if (S.ff > 0) setSpeedCaption(`PRACTISING · ${Math.ceil(S.ff / 100)} S LEFT`, false);
+    else if (!S.running) setSpeedCaption("PAUSED", false);
+    else if (S.simRate < 0.93) setSpeedCaption(`${S.simRate.toFixed(2)}× REAL TIME · SLOW DEVICE`, false);
+    else setSpeedCaption("1× REAL TIME", true);
+    statT += el;
+    if (statT > 400) { updateStats(); statT = 0; }
   }
-  drawArena(el);
-  drawBrain(el);
-  drawEyes();
-  updateMeters();
-  statT += el;
-  if (statT > 400) { updateStats(); statT = 0; }
   requestAnimationFrame(loop);
 }
-
 function resizeAll() { sizeArena(); sizeBrain(); sizeEyes(); drawCurve(); }
 window.addEventListener("resize", resizeAll);
 
 function start(snap) {
   snap = snap || {};
-  if (snap.mult) plast.load(snap.mult);
-  if (snap.gain) setGain(snap.gain); else setGain(120);
-  if (snap.score) state.score = snap.score;
-  if (snap.faced) state.faced = snap.faced;
-  if (snap.blocks) state.blocks = snap.blocks;
-  if (snap.coach) { state.coach = true; $("coach").checked = true; }
-  if (snap.sparse) { state.sparse = true; $("sparse").checked = true; }
-  setMode(snap.mode || "practice");
-  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches && !snap.mode) {
-    state.running = false; $("pauseBtn").textContent = "Resume";
-  }
-  updateScore(); resizeAll(); updateStats();
+  setGain(snap.gain || 120);
+  ui.coach = !!snap.coach; $("coach").checked = ui.coach;
+  ui.sparse = !!snap.sparse; $("sparse").checked = ui.sparse;
+  if (snap.blocks) blocks = snap.blocks;
+  if (reduceMotion() && !snap.mode) { snap.running = false; ui.running = false; $("pauseBtn").textContent = "Resume"; }
+  startEngine(snap);
+  setMode(snap.mode === "play" ? "play" : "practice", false);
+  resizeAll();
   requestAnimationFrame((t) => { last = t; requestAnimationFrame(loop); });
 }
-window.claude?.hot?.snapshot?.(() => ({
-  mult: Array.from(plast.mult), gain: state.gain, score: state.score, faced: state.faced.slice(-600),
-  blocks: state.blocks, coach: state.coach, sparse: state.sparse, mode: state.mode,
+window.claude?.hot?.snapshot?.(() => S && ({
+  mult: lastMult ? Array.from(lastMult) : undefined, gain: ui.gain, score: S.score, facedTotal: S.facedTotal,
+  returnedTotal: S.returnedTotal, recent: S.recent, blocks, coach: ui.coach, sparse: ui.sparse, mode: ui.mode,
 }));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 })();
