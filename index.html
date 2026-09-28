@@ -169,6 +169,19 @@ button, input, select { font: inherit; }
 #brain { display: block; width: 100%; max-width: 100%; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--f-mono); font-size: 11.5px; color: var(--screen-ink-2); }
 .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+/* jargon you can tap: dotted underline, opens a short explanation */
+.term { font: inherit; color: inherit; letter-spacing: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left;
+  text-decoration: underline dotted 1px; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 55%, transparent); }
+.term:hover, .term[aria-expanded="true"] { color: var(--ink); text-decoration-style: solid; }
+.legend .term:hover, .legend .term[aria-expanded="true"] { color: var(--screen-ink); }
+@media (pointer: coarse) { .term { padding-block: 5px; margin-block: -5px; } .legend { gap: 10px 16px; } }
+.info-pop { position: fixed; z-index: 60; width: max-content; max-width: min(340px, calc(100vw - 24px)); padding: 14px 16px 14px; border-radius: 8px;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--rule); box-shadow: 0 10px 30px rgba(10, 20, 14, .22); }
+.info-pop h4 { margin: 0 28px 6px 0; font-family: var(--f-mono); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.info-pop p { margin: 0; font-family: var(--f-prose); font-size: 15.5px; line-height: 1.45; text-wrap: pretty; }
+.info-pop a { display: inline-block; margin-top: 8px; font-family: var(--f-mono); font-size: 12px; }
+.info-close { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border: 0; border-radius: 6px; background: none; color: var(--ink-3); font-size: 20px; line-height: 1; cursor: pointer; }
+.info-close:hover { background: var(--paper-2); color: var(--ink); }
 
 .sense-row { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; }
 @media (max-width: 640px) { .sense-row { grid-template-columns: minmax(0, 1fr); } }
@@ -279,7 +292,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   <header class="masthead">
     <h1 class="wordmark">FLY <br><span>PONG</span></h1>
     <p class="lede">The top paddle belongs to 1,370 neurons from a real fruit-fly brain. The ball lights up the fly's object-detecting eye cells, the fly's own wiring turns that into steering commands, and the steering moves its paddle. Nothing about its play is scripted, and you can train it.</p>
-    <p class="specline">FlyWire whole-brain connectome, release 783 &nbsp;·&nbsp; 1,370 of 138,639 neurons &nbsp;·&nbsp; 82,282 connections &nbsp;·&nbsp; spiking model after Shiu et al. 2024</p>
+    <p class="specline"><button class="term" data-info="flywire">FlyWire whole-brain connectome</button>, <button class="term" data-info="release">release 783</button> &nbsp;·&nbsp; <button class="term" data-info="subset">1,370 of 138,639 neurons</button> &nbsp;·&nbsp; <button class="term" data-info="connections">82,282 connections</button> &nbsp;·&nbsp; <button class="term" data-info="model">spiking model after Shiu et al. 2024</button></p>
   </header>
 
   <section class="bench" aria-label="Game">
@@ -312,10 +325,10 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         </div>
         <canvas id="brain" aria-label="Map of the fly brain showing the 1,370 simulated neurons at their real positions, flashing when they spike." role="img"></canvas>
         <div class="legend">
-          <span><i style="background:var(--s-lc)"></i>LC10a eye neurons · 234</span>
-          <span><i style="background:var(--s-aotu)"></i>AOTU019 / AOTU025 · 4</span>
-          <span><i style="background:var(--s-dn)"></i>DNa02 / DNa01 steering · 4</span>
-          <span><i style="background:var(--s-other)"></i>other neurons it reaches · 1,128</span>
+          <button class="term" data-info="lc10a"><i style="background:var(--s-lc)"></i>LC10a eye neurons · 234</button>
+          <button class="term" data-info="aotu"><i style="background:var(--s-aotu)"></i>AOTU019 / AOTU025 · 4</button>
+          <button class="term" data-info="dn"><i style="background:var(--s-dn)"></i>DNa02 / DNa01 steering · 4</button>
+          <button class="term" data-info="other"><i style="background:var(--s-other)"></i>other neurons it reaches · 1,128</button>
         </div>
         <div class="tip" id="brainTip" hidden></div>
       </div>
@@ -479,6 +492,12 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     </div>
   </section>
 </main>
+<div class="info-pop" id="infoPop" role="dialog" aria-labelledby="infoTitle" hidden>
+  <button class="info-close" id="infoClose" aria-label="Close">×</button>
+  <h4 id="infoTitle"></h4>
+  <p id="infoBody"></p>
+  <a id="infoLink" target="_blank" rel="noopener" hidden></a>
+</div>
 
 <script src="data/flypong_circuit.js"></script>
 <script id="engine">
@@ -1372,6 +1391,55 @@ window.addEventListener("keyup", (e) => {
 });
 // pause while the tab is hidden, so a phone doesn't spend battery on an unseen game
 document.addEventListener("visibilitychange", () => { if (engine) engine.send({ type: "running", on: !document.hidden && ui.running }); });
+
+// ------------------------------------------------------------------ what the jargon means (tap or click a dotted term)
+const INFO = {
+  flywire: { t: "FlyWire", p: "A complete wiring map of one adult female fruit fly's brain. The brain was cut into thousands of thin slices and photographed with an electron microscope. AI traced every neuron, and scientists and volunteers spent years checking the traces online. About 139,000 neurons and 54 million synapses, published in 2024.",
+    link: ["FlyWire paper, Nature 2024", "https://www.nature.com/articles/s41586-024-07558-y"] },
+  release: { t: "Release 783", p: "FlyWire keeps correcting its map and publishes numbered snapshots. Release 783 is the public one that came with the 2024 papers, so everyone using it gets exactly the same wiring. The FlyWire IDs you see when you tap a neuron on the brain map come from this release." },
+  subset: { t: "1,370 of 138,639 neurons", p: "The brain model this game builds on has 138,639 neurons. A neuron that never fires can't affect any other, so the game keeps only the 1,370 that the ball can ever make fire, even after the most training. On test runs this gave exactly the same steering spikes as simulating the whole brain." },
+  connections: { t: "82,282 connections", p: "The links between those 1,370 neurons. Each carries the number of synapses FlyWire counted between the two cells, and a sign from the transmitter the sending cell is predicted to use: GABA and glutamate inhibit, the rest excite. Its strength is the synapse count × 0.275 millivolts." },
+  model: { t: "Spiking model", p: "Every neuron is the same simple unit: it adds up incoming signals, leaks back towards rest, and fires a spike when it crosses a threshold. Only the wiring differs. Shiu et al. used this model on the whole FlyWire brain to find the neurons behind feeding and grooming, and the simulator here reproduces theirs (r = 0.999).",
+    link: ["Shiu et al., Nature 2024", "https://www.nature.com/articles/s41586-024-07763-9"] },
+  lc10a: { t: "LC10a eye neurons", p: "Visual neurons that respond to small moving objects. Male flies use them to chase a female during courtship. Each of the 234, about 115 per eye, watches its own patch of the visual field, and the ball excites the ones it falls in." },
+  aotu: { t: "AOTU019 and AOTU025", p: "Relay neurons in the anterior optic tubercle, one of each per side. AOTU019 handles objects near the centre of view and AOTU025 the periphery. In this model the peripheral one drives steering hardest, which is why the fly swings late.",
+    link: ["Collie et al., Neuron 2026", "https://www.biorxiv.org/content/10.1101/2025.04.23.650240v2"] },
+  dn: { t: "DNa02 and DNa01", p: "Descending neurons, which carry commands from the brain down to the body. In walking flies, the right-minus-left firing of these cells predicts turning. Here that difference moves the paddle.",
+    link: ["Rayshubskiy et al., eLife 2025", "https://elifesciences.org/articles/102230"] },
+  other: { t: "Other neurons it reaches", p: "Every other neuron that the eye signals can make fire on their way to the steering neurons, excitatory and inhibitory. Together they shape the steering command, and training can recruit more of them." },
+};
+const infoPop = $("infoPop");
+let infoFor = null;
+function closeInfo() {
+  if (!infoFor) return;
+  infoFor.setAttribute("aria-expanded", "false");
+  infoFor = null; infoPop.hidden = true;
+}
+function openInfo(btn) {
+  if (infoFor === btn) { closeInfo(); return; }
+  closeInfo();
+  const it = INFO[btn.dataset.info];
+  if (!it) return;
+  $("infoTitle").textContent = it.t;
+  $("infoBody").textContent = it.p;
+  const a = $("infoLink");
+  if (it.link) { a.textContent = it.link[0] + " ↗"; a.href = it.link[1]; a.hidden = false; } else a.hidden = true;
+  infoPop.hidden = false; infoFor = btn; btn.setAttribute("aria-expanded", "true");
+  const r = btn.getBoundingClientRect(), w = infoPop.offsetWidth, h = infoPop.offsetHeight, m = 12;
+  let top = r.bottom + 8;
+  if (top + h > innerHeight - m && r.top - 8 - h > m) top = r.top - 8 - h;        // no room below: open above
+  infoPop.style.top = Math.max(m, top) + "px";
+  infoPop.style.left = clamp(r.left + r.width / 2 - w / 2, m, Math.max(m, innerWidth - w - m)) + "px";
+}
+document.querySelectorAll(".term").forEach((b) => {
+  b.setAttribute("aria-haspopup", "dialog"); b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-controls", "infoPop");
+  b.addEventListener("click", (e) => { e.stopPropagation(); openInfo(b); });
+});
+$("infoClose").addEventListener("click", closeInfo);
+document.addEventListener("pointerdown", (e) => { if (infoFor && !infoPop.contains(e.target) && !e.target.closest(".term")) closeInfo(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeInfo(); });
+window.addEventListener("scroll", closeInfo, { passive: true });
+window.addEventListener("resize", closeInfo);
 
 // ------------------------------------------------------------------ main loop (drawing only when the engine runs in a worker)
 let last = performance.now(), statT = 0, speedShown = "";
