@@ -181,7 +181,8 @@ button, input, select { font: inherit; }
 .term { font: inherit; color: inherit; letter-spacing: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left;
   text-decoration: underline dotted 1px; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 55%, transparent); }
 .term[aria-expanded="true"] { color: var(--ink); text-decoration-style: solid; }
-@media (hover: hover) { .term:hover { color: var(--ink); text-decoration-style: solid; } }
+@media (hover: hover) { .term:hover { color: var(--ink); text-decoration-style: solid; } .screen .term:hover { color: var(--screen-ink); } }
+.screen .term[aria-expanded="true"] { color: var(--screen-ink); }
 .legend .key[aria-expanded="true"] { background: rgba(216, 226, 218, .07); }
 @media (hover: hover) { .legend .key:hover { background: rgba(216, 226, 218, .07); } }
 .legend .key[aria-expanded="true"] .k-role { text-decoration-style: solid; }
@@ -190,6 +191,7 @@ button, input, select { font: inherit; }
   background: var(--panel); color: var(--ink); border: 1px solid var(--rule); box-shadow: 0 10px 30px rgba(10, 20, 14, .22); }
 .info-pop h4 { margin: 0 28px 6px 0; font-family: var(--f-mono); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
 .info-pop p { margin: 0; font-family: var(--f-prose); font-size: 15.5px; line-height: 1.45; text-wrap: pretty; }
+.info-pop p + p { margin-top: 7px; }
 .info-pop a { display: inline-block; margin-top: 8px; font-family: var(--f-mono); font-size: 12px; }
 .info-close { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border: 0; border-radius: 6px; background: none; color: var(--ink-3); font-size: 20px; line-height: 1; cursor: pointer; }
 .info-close:hover { background: var(--paper-2); color: var(--ink); }
@@ -201,7 +203,14 @@ button, input, select { font: inherit; }
 .eyes canvas { display: block; width: 100%; max-width: 100%; aspect-ratio: 1.5 / 1; }
 .eye { margin: 0; display: grid; gap: 5px; min-width: 0; }
 .eye figcaption { font-family: var(--f-mono); font-size: 11px; color: var(--screen-ink-2); text-align: center; }
-.ball-read { margin: 2px 0 0; text-align: center; font-family: var(--f-mono); font-size: 12px; color: var(--screen-ink); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* live readouts: fixed-width slots, so only the numbers change and nothing shifts */
+.io-read { margin: 2px 0 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 2px 10px; font-family: var(--f-mono); font-size: 12px; color: var(--screen-ink); white-space: nowrap; }
+.io-tag { font-size: 10.5px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; color: var(--screen-ink-2); }
+.slot { display: inline-block; text-align: left; }
+.slot.n2 { width: 2ch; text-align: right; }
+.slot.n3 { width: 3ch; }
+.slot.w5 { width: 5ch; }
+.slot.dir { width: 1.4ch; text-align: center; }
 
 .meter { display: grid; grid-template-columns: 58px 1fr 1fr; align-items: center; gap: 4px; font-family: var(--f-mono); font-size: 11.5px; }
 .meter .name { color: var(--screen-ink); }
@@ -216,7 +225,10 @@ button, input, select { font: inherit; }
 .turn-track { position: relative; height: 18px; border-top: 1px solid var(--screen-rule); border-bottom: 1px solid var(--screen-rule); }
 .turn-track::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--screen-ink-2); opacity: .5; }
 .turn-needle { position: absolute; top: 2px; bottom: 2px; width: 4px; margin-left: -2px; left: 50%; background: var(--led-on); border-radius: 2px; }
-.turn-read { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 11px; color: var(--screen-ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.turn-read { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; font-family: var(--f-mono); font-size: 11px; color: var(--screen-ink-2); white-space: nowrap; }
+.turn-read > :first-child { justify-self: start; }
+.turn-read > :last-child { justify-self: end; }
+.turn-read .mid { color: var(--screen-ink); }
 
 /* ---------- controls ---------- */
 .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
@@ -305,7 +317,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   <header class="masthead">
     <h1 class="wordmark">FLY <br><span>PONG</span></h1>
     <p class="lede">The top paddle belongs to 1,370 neurons from a real fruit-fly brain. The ball lights up the fly's object-detecting eye cells, the fly's own wiring turns that into steering commands, and the steering moves its paddle. Nothing about its play is scripted, and you can train it.</p>
-    <p class="specline"><button class="term" data-info="flywire">FlyWire whole-brain connectome</button>, <button class="term" data-info="release">release 783</button> &nbsp;·&nbsp; <button class="term" data-info="subset">1,370 of 138,639 neurons</button> &nbsp;·&nbsp; <button class="term" data-info="connections">82,282 connections</button> &nbsp;·&nbsp; <button class="term" data-info="model">spiking model after Shiu et al. 2024</button></p>
+    <p class="specline"><button class="term" data-info="flywire">FlyWire whole-brain connectome</button>, <button class="term" data-info="release">release 783</button> &nbsp;·&nbsp; <button class="term" data-info="subset">1,370 of 138,639 neurons</button> &nbsp;·&nbsp; <button class="term" data-info="inputs">234 input neurons</button> &nbsp;·&nbsp; <button class="term" data-info="outputs">4 output neurons</button> &nbsp;·&nbsp; <button class="term" data-info="connections">82,282 connections</button>, <button class="term" data-info="trainable">10,866 trainable</button> &nbsp;·&nbsp; <button class="term" data-info="params">26 hand-set parameters</button> &nbsp;·&nbsp; <button class="term" data-info="model">spiking model after Shiu et al. 2024</button></p>
   </header>
 
   <section class="bench" aria-label="Game">
@@ -348,21 +360,21 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
       <div class="sense-row">
         <div class="screen eyes-wrap">
-          <span class="label"><button class="term" data-info="inputs">What its eyes report</button> · LC10a receptive fields</span>
+          <span class="label"><button class="term" data-info="lc10a">What its eyes report</button> · LC10a receptive fields</span>
           <div class="eyes">
             <figure class="eye"><canvas id="eyeA" aria-label="The fly's right eye: LC10a activity" role="img"></canvas><figcaption>its right eye</figcaption></figure>
             <figure class="eye"><canvas id="eyeB" aria-label="The fly's left eye: LC10a activity" role="img"></canvas><figcaption>its left eye</figcaption></figure>
           </div>
-          <p class="ball-read" id="ballRead">ball dead ahead · 2° wide</p>
+          <p class="io-read"><button class="term io-tag" data-info="inputs">Model input</button><span>ball <span class="slot n2" id="ballAz">0</span>° to its <span class="slot w5" id="ballSide">right</span> · <span class="slot n2" id="ballSize">2</span>° wide</span></p>
         </div>
         <div class="screen steer-wrap">
-          <span class="label"><button class="term" data-info="outputs">Steering neurons</button> · spikes/s</span>
-          <div class="meter-scale"><span></span><span>← its right</span><span>its left →</span></div>
+          <span class="label">Model output · <button class="term" data-info="outputs">Steering neurons</button></span>
+          <div class="meter-scale"><span>spikes/s</span><span>← its right</span><span>its left →</span></div>
           <div class="meter"><span class="name">DNa02</span><div class="bar l"><i id="m02R"></i></div><div class="bar r"><i id="m02L"></i></div></div>
           <div class="meter"><span class="name">DNa01</span><div class="bar l"><i id="m01R"></i></div><div class="bar r"><i id="m01L"></i></div></div>
           <div class="turn">
             <div class="turn-track"><div class="turn-needle" id="needle"></div></div>
-            <div class="turn-read"><span id="rateR">R 0</span><span id="turnRead">steer 0</span><span id="rateL">L 0</span></div>
+            <div class="turn-read"><span>R <span class="slot n3" id="rateR">0</span></span><span class="mid">steer <span class="slot dir" id="turnDir">&nbsp;</span> <span class="slot n3" id="turnRead">0</span></span><span>L <span class="slot n3" id="rateL">0</span></span></div>
           </div>
         </div>
       </div>
@@ -403,7 +415,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       <div class="stats">
         <div class="figs">
           <div class="fig"><div class="v" id="retRecent">–</div><div class="k" id="retRecentK">fly returns, last 20 balls</div></div>
-          <div class="fig"><div class="v" id="synChanged">0</div><div class="k" id="synK">of 10,866 eye-neuron synapses changed</div></div>
+          <div class="fig"><div class="v" id="synChanged">0</div><div class="k" id="synK">of 10,866 eye-neuron connections changed</div></div>
         </div>
         <div class="chart">
           <span class="label">Fly's returns per 10 balls</span>
@@ -470,7 +482,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           <li>Every neuron is the same leaky integrate-and-fire unit, with the parameters of Shiu et al. 2024.</li>
           <li>The ball drives LC10a through Gaussian receptive fields 16° wide. Each eye is assumed to see from 15° across the midline to 150° to its side.</li>
           <li>The steering readout: DNa01 counted at half the weight of DNa02, the steering-to-paddle gain and the 25 ms smoothing of steering rates.</li>
-          <li>The learning rule and which synapses may change.</li>
+          <li>The learning rule and which connections may change.</li>
           <li>Arousal is an input gain. In courting males, P1 neurons raise LC10a gain, but P1 is male-specific and this is a female brain.</li>
         </ul>
       </div>
@@ -478,7 +490,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
     <div>
       <h2>How training works</h2>
-      <p>The 10,866 synapses that LC10a neurons make onto the rest of the circuit can change. Each keeps an eligibility trace, a fading record (time constant 0.8 s) of moments when the neurons on both sides of it fired together. Dopamine turns that record into change: sugar strengthens recently active synapses and heat weakens them, up to three times or down to zero their wired strength. This three-factor rule is how the fly's mushroom body learns. Applying it to the pursuit pathway is our assumption.</p>
+      <p>The 10,866 connections that LC10a neurons make onto the rest of the circuit can change. Each keeps an eligibility trace, a fading record (time constant 0.8 s) of moments when the neurons on both sides of it fired together. Dopamine turns that record into change: sugar strengthens recently active connections and heat weakens them, up to three times or down to zero their wired strength. This three-factor rule is how the fly's mushroom body learns. Applying it to the pursuit pathway is our assumption.</p>
       <p>Rally reward sounds like the obvious way to teach Pong, and it barely works. A miss is usually a turn that came too late, and weakening the synapses that were active makes the next turn weaker still. The coach gives feedback every 10 ms instead, the way heat was applied in the classic flight-simulator experiments where tethered flies learned to steer. In our tests, two minutes of coaching took a naive fly from 36% of balls returned to 84%, as good as a courting fly (80%). We measured each over three five-minute runs, with learning switched off for the trained fly.</p>
     </div>
 
@@ -509,7 +521,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 <div class="info-pop" id="infoPop" role="dialog" aria-labelledby="infoTitle" hidden>
   <button class="info-close" id="infoClose" aria-label="Close">×</button>
   <h4 id="infoTitle"></h4>
-  <p id="infoBody"></p>
+  <div id="infoBody"></div>
   <a id="infoLink" target="_blank" rel="noopener" hidden></a>
 </div>
 
@@ -1213,7 +1225,8 @@ function sizeEyes() {
     e.base = base;
   }
 }
-let ballReadShown = "";
+const liveShown = {};
+function setLive(id, val) { if (liveShown[id] !== val) { liveShown[id] = val; $(id).textContent = val; } }
 function drawEyes() {
   const rates = S.rates, gmax = 150;
   for (const e of EYES) {
@@ -1235,23 +1248,33 @@ function drawEyes() {
       g.beginPath(); g.arc(e.X(az), e.Y(0), Math.max(4, S.view.size / (e.hi - e.lo) * e.c.width / 2 + 3), 0, 7); g.stroke();
     }
   }
-  const az = Math.round(S.view.az), size = Math.round(S.view.size);
-  const t = (Math.abs(az) < 2 ? "ball dead ahead" : `ball ${Math.abs(az)}° to its ${az > 0 ? "right" : "left"}`) + ` · ${size}° wide`;
-  if (t !== ballReadShown) { ballReadShown = t; $("ballRead").textContent = t; }
+  // model input: the ball's direction and apparent size, in fixed-width slots
+  setLive("ballAz", String(Math.min(99, Math.abs(Math.round(S.view.az)))));
+  setLive("ballSide", S.view.az < 0 ? "left" : "right");
+  setLive("ballSize", String(Math.min(99, Math.round(S.view.size))));
 }
 
 // ------------------------------------------------------------------ meters, stats, chart
-const meterEls = { m02R: $("m02R"), m02L: $("m02L"), m01R: $("m01R"), m01L: $("m01L"), needle: $("needle"), rateR: $("rateR"), rateL: $("rateL"), turnRead: $("turnRead"), daFill: $("daFill"), padKnob: $("padKnob") };
+const meterEls = { m02R: $("m02R"), m02L: $("m02L"), m01R: $("m01R"), m01L: $("m01L"), needle: $("needle"), daFill: $("daFill"), padKnob: $("padKnob") };
 const shown = {};
 function setStyle(key, prop, val) { const k = key + prop; if (shown[k] !== val) { shown[k] = val; meterEls[key].style[prop] = val; } }
-function setText(key, val) { const k = key + "#"; if (shown[k] !== val) { shown[k] = val; meterEls[key].textContent = val; } }
+const readAcc = [0, 0, 0, 0];
+let readT = 0;
 function updateMeters() {
   const dn = S.dn, full = 120, pct = (v) => Math.min(100, Math.round(v / full * 100)) + "%";
   setStyle("m02R", "width", pct(dn[1])); setStyle("m02L", "width", pct(dn[0]));
   setStyle("m01R", "width", pct(dn[3])); setStyle("m01L", "width", pct(dn[2]));
-  const R = Math.round(dn[1] + CFG.beta01 * dn[3]), L = Math.round(dn[0] + CFG.beta01 * dn[2]), turn = Math.round(S.turn);
-  setText("rateR", `R ${R}`); setText("rateL", `L ${L}`);
-  setText("turnRead", Math.abs(turn) < 2 ? "steer 0" : (turn > 0 ? `steer ← ${turn}` : `steer → ${-turn}`));
+  // model output as numbers: averaged and refreshed 5 times a second so they can be read (the bars and needle stay live)
+  readAcc[0] += dn[1] + CFG.beta01 * dn[3]; readAcc[1] += dn[0] + CFG.beta01 * dn[2]; readAcc[2] += S.turn; readAcc[3]++;
+  const now = performance.now();
+  if (now - readT >= 200) {
+    const n = readAcc[3], turn = Math.round(readAcc[2] / n), still = Math.abs(turn) < 2;
+    setLive("rateR", String(Math.min(999, Math.round(readAcc[0] / n))));
+    setLive("rateL", String(Math.min(999, Math.round(readAcc[1] / n))));
+    setLive("turnDir", still ? "\u00a0" : turn > 0 ? "←" : "→");      // the fly turning to its right moves the paddle to your left
+    setLive("turnRead", still ? "0" : String(Math.min(999, Math.abs(turn))));
+    readAcc.fill(0); readT = now;
+  }
   setStyle("needle", "left", (50 - clamp(S.turn / 100, -1, 1) * 48).toFixed(1) + "%");     // the fly's right = your left
   const da = clamp(S.da * 2.5, -1, 1);
   setStyle("daFill", "width", (Math.abs(da) * 50).toFixed(1) + "%");
@@ -1266,7 +1289,7 @@ function updateStats() {
   $("retRecent").innerHTML = n ? `${Math.round(100 * ret / n)}%<small>${n < 20 ? n + " balls so far" : ""}</small>` : "–";
   $("retRecentK").textContent = S.facedTotal ? `fly returns, last ${Math.min(20, S.facedTotal)} balls · ${S.returnedTotal} of ${S.facedTotal} overall` : "fly returns, last 20 balls";
   $("synChanged").textContent = (syn.up + syn.down).toLocaleString();
-  $("synK").textContent = `of ${(syn.total || 10866).toLocaleString()} eye-neuron synapses changed · ${syn.up.toLocaleString()} up, ${syn.down.toLocaleString()} down`;
+  $("synK").textContent = `of ${(syn.total || 10866).toLocaleString()} eye-neuron connections changed · ${syn.up.toLocaleString()} up, ${syn.down.toLocaleString()} down`;
 }
 function updateScore() {
   $("scoreYou").textContent = String(S.score.you).padStart(2, "0");
@@ -1415,9 +1438,11 @@ const INFO = {
   connections: { t: "82,282 connections", p: "The links between those 1,370 neurons. Each carries the number of synapses FlyWire counted between the two cells, and a sign from the transmitter the sending cell is predicted to use: GABA and glutamate inhibit, the rest excite. Its strength is the synapse count × 0.275 millivolts." },
   model: { t: "Spiking model", p: "Every neuron is the same simple unit: it adds up incoming signals, leaks back towards rest, and fires a spike when it crosses a threshold. Only the wiring differs. Shiu et al. used this model on the whole FlyWire brain to find the neurons behind feeding and grooming, and the simulator here reproduces theirs (r = 0.999).",
     link: ["Shiu et al., Nature 2024", "https://www.nature.com/articles/s41586-024-07763-9"] },
-  outputs: { t: "What the game reads from the fly", p: "Four neurons: the left and right DNa02 and DNa01. Every 10 ms the game counts their spikes, smooths the rates over about 25 ms and works out turn = (right DNa02 − left DNa02) + ½ (right DNa01 − left DNa01). The paddle moves 0.045 field widths per second for every spike per second of turn, up to 2 widths per second, reached at about 44 spikes/s. Turning to its right moves the paddle to your left, since the fly faces you. The game reads no other neuron; the rest of the brain moves the paddle only through these four." },
-  inputs: { t: "What the fly gets from the game", p: "Only the ball. Every 10 ms the game works out, from the fly's paddle, how far the ball is to its left or right and how big it looks (about 3° at your end, over 30° up close); the line under the eyes shows both. Each eye neuron fires at gain × e^(−d²/2σ²), where d is the angle from the ball to that neuron's patch of view and σ² = 16² + (size/2)². The fly can't see your paddle, the walls or the score. Sugar and heat change its synapses directly and never arrive as spikes." },
-  lc10a: { t: "Eye neurons · LC10a", p: "Visual neurons that respond to small moving objects. Male flies use them to chase a female during courtship. Each of the 234, about 115 per eye, watches its own patch of the visual field, and the ball excites the ones it falls in." },
+  outputs: { t: "Model output: 4 steering neurons", p: "The left and right DNa02 and DNa01. Every 10 ms the game counts their spikes, smooths the rates over about 25 ms and works out turn = (right DNa02 − left DNa02) + ½ (right DNa01 − left DNa01), shown as steer under the meters. The paddle moves 0.045 field widths per second for every spike per second of turn, up to 2 widths per second, reached at about 44 spikes/s. Turning to its right moves the paddle to your left, since the fly faces you. The game reads no other neuron; the rest of the brain moves the paddle only through these four." },
+  inputs: { t: "Model input: the ball", p: "The model gets one thing from the game: the ball. Every 10 ms the game works out, from the fly's paddle, how far the ball is to its left or right and how big it looks (about 3° at your end, over 30° up close); the model input line under the eyes shows both. Those two numbers set the firing of the model's 234 input neurons, the LC10a eye neurons: each fires at gain × e^(−d²/2σ²), where d is the angle from the ball to that neuron's patch of view and σ² = 16² + (size/2)². The fly can't see your paddle, the walls or the score. Sugar and heat change the strength of its connections directly and never arrive as spikes." },
+  trainable: { t: "10,866 trainable connections", p: "Every connection the 234 eye neurons make: 10,866 of the 82,282. Training gives each one a multiplier on its wired strength, kept between 0 and 3, and moves it with dopamine (sugar or heat) and a fading trace of recent firing on both sides. The other 71,416 connections keep the strength their synapse counts give them." },
+  params: { t: "26 hand-set parameters", p: "Numbers chosen rather than measured. Nine come with the neuron model and are the same for every neuron; the other 17 are ours.\nNeuron model (9, from Shiu et al.): rest −52 mV, reset −52 mV, threshold −45 mV, membrane time constant 20 ms, synaptic time constant 5 ms, refractory period 2.2 ms, delay 1.8 ms, 0.275 mV per synapse, and each input spike worth 250 synapses.\nEyes (6): receptive fields 16° wide; the eye gain slider; a view from 15° across the midline to 150° out, and from 60° below to 70° above.\nSteering (4): DNa01 at half the weight of DNa02; 0.045 field widths/s per spike/s; top speed 2 widths/s; 25 ms smoothing.\nLearning (7): a 0.8 s trace; learning rates 0.01 for the coach and for rally reward, 0.02 for the buttons; multipliers kept between 0 and 3; expected reward updated at rate 0.1.\nNot counted: the 82,282 connection strengths, which come from FlyWire's synapse counts; the 0.1 ms and 10 ms time steps; and the rules of the game itself." },
+  lc10a: { t: "Eye neurons · LC10a", p: "Visual neurons that respond to small moving objects. Male flies use them to chase a female during courtship. They are the model's 234 input neurons, 119 in the right eye and 115 in the left, each watching its own patch of the visual field. In the eye maps each dot is one of them, drawn where it looks, and it lights up when the ball falls in its patch." },
   aotu: { t: "Relay neurons · AOTU019, AOTU025", p: "Two relays per side in the anterior optic tubercle pass the eye signal on to the steering neurons. AOTU025 serves the periphery and excites the steering neuron on its own side, about 160 synapses. AOTU019 serves the centre of view; it uses GABA, so it is inhibitory, and holds down the steering neuron on the opposite side. A ball in front keeps both steering neurons quiet; a ball off to one side makes the fly turn.",
     link: ["Collie et al., Neuron 2026", "https://www.biorxiv.org/content/10.1101/2025.04.23.650240v2"] },
   dn: { t: "Steering neurons · DNa02, DNa01", p: "Descending neurons, which carry commands from the brain down to the body. In walking flies, the right-minus-left firing of these cells predicts turning. Here that difference moves the paddle. Each DNa02 hears from about 750 partner cells through 12,000 to 13,000 synapses, about a third of them inhibitory.",
@@ -1437,7 +1462,7 @@ function openInfo(btn) {
   const it = INFO[btn.dataset.info];
   if (!it) return;
   $("infoTitle").textContent = it.t;
-  $("infoBody").textContent = it.p;
+  $("infoBody").replaceChildren(...it.p.split("\n").map((line) => { const q = document.createElement("p"); q.textContent = line; return q; }));
   const a = $("infoLink");
   if (it.link) { a.textContent = it.link[0] + " ↗"; a.href = it.link[1]; a.hidden = false; } else a.hidden = true;
   infoPop.hidden = false; infoFor = btn; btn.setAttribute("aria-expanded", "true");

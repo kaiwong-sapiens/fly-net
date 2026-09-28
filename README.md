@@ -8,6 +8,8 @@ ball ─► LC10a eye neurons (234) ─► AOTU019 / AOTU025 ─► … 1,128 mo
          the wiring itself           pursuit relays           input can reach          neurons
 ```
 
+**By the numbers:** the model's input is the ball, delivered to 234 input neurons (LC10a); its output is 4 steering neurons (left and right DNa02 and DNa01); 1,370 neurons in all. 82,282 connections, each set by FlyWire's synapse count, none fitted; 10,866 of them (every LC10a output) are trainable. 26 hand-set parameters: 9 from the neuron model of Shiu et al. and 17 of ours (eyes 6, steering readout 4, learning 7), listed in the game under "26 hand-set parameters".
+
 ## Play
 
 **Live: https://kaiwong-sapiens.github.io/fly-net/**
@@ -30,7 +32,7 @@ Return rate of the fly's paddle against a wall that sends back random angles. Ea
 | Motionless paddle | **24%** (23–25) |
 | Naive fly after 2 min of coaching, tested with learning off | **84%** (82–86) |
 
-Coaching changes about 2,500 of the 10,866 LC10a output synapses, almost all strengthened. The median synapse is untouched.
+Coaching changes about 2,500 of the 10,866 LC10a output connections, almost all strengthened. The median connection is untouched.
 
 **What the wiring does on its own** (`results/steering_sweep.log`). While the ball is within about ±30° of straight ahead, it drives the central relay AOTU019, but the steering neurons stay nearly silent (under 16 spikes/s). Further out, the peripheral relay AOTU025 joins in and that side's DNa02 fires hard, reaching 60–110 spikes/s at 90°. The opposite DNa02 stays silent. So the fly holds still while the ball is roughly in front and swings when it drifts to the side. The wiring explains why: AOTU025 is excitatory and drives the DNa02 on its own side (154 and 167 synapses), while AOTU019 is GABAergic and inhibits the DNa02 on the opposite side (216 and 121 synapses), so a ball in front, which drives both AOTU019s, holds both steering neurons down. That matches the two parallel pursuit pathways described by Collie et al. (2026).
 
@@ -57,9 +59,9 @@ One Brian2 detail mattered and is copied in `flysim.py` and the browser engine: 
 - **Data (FlyWire v783):** who connects to whom, synapse counts, excitatory/inhibitory sign from predicted transmitters (GABA and glutamate inhibit, everything else excites, as in Shiu et al.), cell types, and each LC10a's place on the eye map.
 - **Modelled:**
   - the neuron model;
-  - the ball → LC10a mapping (Gaussian receptive fields 16° wide; each eye assumed to see from 15° across the midline to 150° to its side);
-  - the steering → paddle readout: DNa01 counted at half the weight of DNa02, a gain of 0.045 field widths/s per spike/s, and 25 ms smoothing;
-  - the learning rule: a three-factor rule where an eligibility trace (τ = 0.8 s) of pre×post coincidences is turned into change by dopamine, clipped to 0–3× the wired strength, and applied to LC10a output synapses. This is the mushroom body's form of plasticity, and applying it here is our assumption;
+  - the ball → LC10a mapping (Gaussian receptive fields 16° wide; each eye assumed to see from 15° across the midline to 150° to its side, and from 60° below to 70° above);
+  - the steering → paddle readout: DNa01 counted at half the weight of DNa02, a gain of 0.045 field widths/s per spike/s, and 25 ms smoothing. Varying each (`pipeline/experiments/readout_sweep.py`, `results/readout_sweep.log`): DNa01's weight makes no difference, because it barely fires; a higher gain makes the fly better (courting fly 47% at 0.015, 80% at 0.045, 91% at 0.1); 25 ms smoothing plays better than 10 ms (72%) or 50 ms (77%);
+  - the learning rule: a three-factor rule where an eligibility trace (τ = 0.8 s) of pre×post coincidences is turned into change by dopamine, clipped to 0–3× the wired strength, and applied to LC10a output connections. This is the mushroom body's form of plasticity, and applying it here is our assumption;
   - "arousal" as an input gain. P1 neurons raise LC10a gain in courting males, but this is a female brain with no P1.
 
 ## Deploy
@@ -80,6 +82,7 @@ python pipeline/build_subnet.py        # ~3 min
 python pipeline/validate_subnet.py
 python pipeline/export_subnet.py       # writes game/data/flypong_circuit.js and work/flypong_circuit.json
 python pipeline/experiments/verify_stats.py
+python pipeline/experiments/readout_sweep.py   # how much the readout's choices matter
 ```
 
 ## The male brain (from the Google/Janelia post)

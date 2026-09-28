@@ -134,9 +134,9 @@ class PongConfig:
     speed_up: float = 1.03
     speed_max: float = 1.4
     gain_hz: float = 120.0        # LC10a peak rate (arousal)
-    K: float = 0.016              # paddle speed (W/s) per Hz of steering difference
+    K: float = 0.045              # paddle speed (W/s) per Hz of steering difference (as in the game)
     v_max: float = 2.0
-    tau_dn: float = 40.0          # ms, smoothing of steering-neuron rates
+    tau_dn: float = 25.0          # ms, smoothing of steering-neuron rates (as in the game)
     beta01: float = 0.5           # weight of DNa01 relative to DNa02
     frame_ms: float = 10.0
 
