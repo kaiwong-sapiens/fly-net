@@ -1,6 +1,6 @@
 # fly-net · Fly Pong
 
-Play Pong against a fruit fly's brain. The bottom paddle is driven by **1,370 spiking neurons wired exactly as in the FlyWire whole-brain connectome**. The ball excites the fly's object-detecting eye neurons (LC10a). The fly's own wiring turns that into activity in its steering neurons (DNa02/DNa01), and their right-minus-left firing moves the paddle. Nothing about its play is scripted. You can also train it with dopamine-style plasticity.
+Play Pong against a fruit fly's brain. The fly's paddle (top) is driven by **1,370 spiking neurons wired exactly as in the FlyWire whole-brain connectome**. The ball excites the fly's object-detecting eye neurons (LC10a). The fly's own wiring turns that into activity in its steering neurons (DNa02/DNa01), and their right-minus-left firing moves the paddle. Nothing about its play is scripted. You can also train it with dopamine-style plasticity.
 
 ```
 ball ─► LC10a eye neurons (234) ─► AOTU019 / AOTU025 ─► … 1,128 more neurons … ─► DNa02 / DNa01 ─► paddle
@@ -14,10 +14,10 @@ ball ─► LC10a eye neurons (234) ─► AOTU019 / AOTU025 ─► … 1,128 mo
 
 Or open `game/index.html` in a browser. It works straight from disk, because the circuit loads as a script from `game/data/`, or you can serve the folder with `python3 -m http.server -d game`.
 
-- **You play**: click the arena or use ← → / A D to take the top paddle.
+- **You play**: your paddle is at the bottom. On a phone, slide your thumb along the pad under the arena (or drag on the arena); on a computer, move the mouse or use ← → / A D.
 - **Naive fly / Courting fly**: eye gain 45 vs 120 spikes/s. Courting males turn up LC10a gain to chase a female (Hindmarsh Sten et al. 2021).
 - **Train it**: *Coach* gives sugar while the fly steers toward the ball and heat while it steers away. *Rally reward* gives sugar per return and heat per miss. You can also press *Give sugar* / *Give heat* yourself. *Fast practice* runs 60 s of fly-vs-wall training as fast as your machine allows.
-- Hover any neuron on the brain map to see its type, transmitter and FlyWire ID.
+- Hover or tap any neuron on the brain map to see its type, transmitter and FlyWire ID. The brain map, eye view and steering meters are drawn from the front, as you face the fly, so its right side is on your left.
 
 ## Results
 
@@ -47,6 +47,8 @@ Coaching changes about 2,500 of the 10,866 LC10a output synapses, almost all str
 | Sub-circuit vs whole brain | `pipeline/validate_subnet.py` | **identical** steering-neuron spike trains on 6 random ball trajectories with random synapse strengths |
 | Export for the browser | `pipeline/export_subnet.py` | 1,370 neurons, 82,282 connections, 1.06 MB |
 | Closed-loop reference game + learning rule | `pipeline/pong_sim.py` | the browser engine reproduces its steering rates (e.g. DNa02 9.2 spikes/s at −30° in both) |
+
+**In the browser** the spiking engine runs in a Web Worker, so drawing and touch never wait on it; on a slow phone the game slows down rather than freezing the page, and without Worker support it falls back to the page with at most 8 ms of simulation per frame. Each 0.1 ms step visits only neurons that hold charge and targets with spikes in transit, which is spike-for-spike identical to updating all 1,370 neurons (checked on 30 s of play).
 
 One Brian2 detail mattered and is copied in `flysim.py` and the browser engine: **synaptic input that arrives while a neuron is in its 2.2 ms refractory period is discarded.** Brian2 does this automatically for variables flagged `unless refractory`. Without it, strongly driven neurons fire about 20% too fast.
 
@@ -105,7 +107,7 @@ python pipeline/export_subnet.py --dataset malecns
 ## Layout
 
 ```
-game/index.html                 the game (plain JS; spiking engine, eye model, learning, rendering)
+game/index.html                 the game: engine (spiking brain, eyes, learning, physics) in a Web Worker; the page only draws
 game/data/flypong_circuit.js    exported sub-circuit
 pipeline/                       simulator, receptive fields, extraction, validation, export, closed-loop reference
 pipeline/experiments/           steering sweep, learning-rule comparison, return-rate verification
