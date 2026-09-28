@@ -17,7 +17,7 @@ ball ─► LC10a eye neurons (234) ─► AOTU019 / AOTU025 ─► … 1,128 mo
 | Output neurons | 4 | left and right DNa02 and DNa01; their right-minus-left firing moves the paddle |
 | Neurons in all | 1,370 | the 234 and the 4 above, plus 4 relay neurons and 1,128 others that the ball can make fire |
 | Connections | 82,282 | the model's weights. Each is FlyWire's synapse count × 0.275 mV, excitatory or inhibitory by transmitter; none was tuned to play Pong |
-| Trainable connections | 10,866 | every connection out of the 234 input neurons. Training scales each one by 0–3×; the other 71,416 never change |
+| Trainable connections | 10,866 | the links from the 234 eye neurons to the cells they signal, about 47 each. Training multiplies each link's strength by a factor from 0 (switched off) to 3 (three times as strong); the other 71,416 links always keep their wired strength |
 | Hand-set parameters | 26 | numbers that aren't in the wiring: 9 for the neuron model (from Shiu et al.) and 17 we chose (eyes 6, steering readout 4, learning 7). The game lists them all under "26 hand-set parameters" |
 
 ## Play
