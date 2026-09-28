@@ -949,7 +949,7 @@ function startEngine(snap) {
   engine = { kind: "worker", send: (m) => worker.postMessage(m) };
   let alive = false;
   worker.onmessage = (e) => { alive = true; onState(e.data); };
-  const fallBack = () => { if (engine.kind === "worker" && !alive) { worker.terminate(); startOnPage(snap); } };
+  const fallBack = () => { if (engine.kind === "worker" && !alive) { worker.terminate(); startOnPage(snap); syncUi(); } };
   worker.onerror = fallBack;
   setTimeout(fallBack, 2500);
   worker.postMessage({ type: "init", data: DATA, snap });
@@ -1279,6 +1279,7 @@ window.addEventListener("touchstart", () => document.documentElement.classList.a
 function setMode(mode, byUser) {
   ui.mode = mode;
   engine.send({ type: "mode", mode });
+  if (byUser && !ui.running) setRunning(true);
   $("modePlay").setAttribute("aria-pressed", mode === "play");
   $("modePractice").setAttribute("aria-pressed", mode === "practice");
   $("modeCaption").textContent = mode === "play" ? "YOU (BOTTOM) VS THE FLY" : "THE FLY PRACTISES ON A WALL";
@@ -1296,6 +1297,10 @@ function setGain(v) {
   ui.gain = +v; $("gain").value = v; $("gainVal").textContent = `${v} spikes/s`;
   $("presetNaive").setAttribute("aria-pressed", +v === 45);
   $("presetCourting").setAttribute("aria-pressed", +v === 120);
+}
+function syncUi() {
+  engine.send({ type: "mode", mode: ui.mode }); engine.send({ type: "gain", value: ui.gain });
+  engine.send({ type: "coach", on: ui.coach }); engine.send({ type: "sparse", on: ui.sparse }); engine.send({ type: "running", on: ui.running });
 }
 function setRunning(on) { ui.running = on; engine.send({ type: "running", on }); $("pauseBtn").textContent = on ? "Pause" : "Resume"; }
 $("modePlay").onclick = () => setMode("play", true);
@@ -1320,6 +1325,7 @@ function fieldX(el, ev) { const r = el.getBoundingClientRect(); return clamp(sx(
 const aim = (x) => engine.send({ type: "target", x });
 let tapStart = null;
 arena.addEventListener("pointerdown", (ev) => {
+  if (!ui.running) setRunning(true);
   if (ev.pointerType === "mouse" || ui.mode === "play") {
     if (ui.mode !== "play") setMode("play", true);
     aim(fieldX(arena, ev));
@@ -1343,6 +1349,7 @@ arena.addEventListener("pointercancel", () => { tapStart = null; });
 const pad = $("pad");
 pad.addEventListener("pointerdown", (ev) => {
   ev.preventDefault();
+  if (!ui.running) setRunning(true);
   if (ui.mode !== "play") setMode("play", true);
   aim(fieldX(pad, ev));
   pad.setPointerCapture(ev.pointerId);
@@ -1379,7 +1386,7 @@ function loop(now) {
   if (S) {
     drawArena(el); drawBrain(el); drawEyes(); updateMeters();
     if (S.ff > 0) setSpeedCaption(`PRACTISING · ${Math.ceil(S.ff / 100)} S LEFT`, false);
-    else if (!S.running) setSpeedCaption("PAUSED", false);
+    else if (!S.running) setSpeedCaption(isTouch() ? "PAUSED · TAP TO RESUME" : "PAUSED · CLICK TO RESUME", false);
     else if (S.simRate < 0.93) setSpeedCaption(`${S.simRate.toFixed(2)}× REAL TIME · SLOW DEVICE`, false);
     else setSpeedCaption("1× REAL TIME", true);
     statT += el;
@@ -1396,7 +1403,6 @@ function start(snap) {
   ui.coach = !!snap.coach; $("coach").checked = ui.coach;
   ui.sparse = !!snap.sparse; $("sparse").checked = ui.sparse;
   if (snap.blocks) blocks = snap.blocks;
-  if (reduceMotion() && !snap.mode) { snap.running = false; ui.running = false; $("pauseBtn").textContent = "Resume"; }
   startEngine(snap);
   setMode(snap.mode === "play" ? "play" : "practice", false);
   resizeAll();
