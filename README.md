@@ -58,7 +58,7 @@ One Brian2 detail mattered and is copied in `flysim.py` and the browser engine: 
 - **Modelled:**
   - the neuron model;
   - the ball → LC10a mapping (Gaussian receptive fields 16° wide; each eye assumed to see from 15° across the midline to 150° to its side);
-  - the steering → paddle gain (0.045 field widths/s per spike/s) and 25 ms smoothing;
+  - the steering → paddle readout: DNa01 counted at half the weight of DNa02, a gain of 0.045 field widths/s per spike/s, and 25 ms smoothing;
   - the learning rule: a three-factor rule where an eligibility trace (τ = 0.8 s) of pre×post coincidences is turned into change by dopamine, clipped to 0–3× the wired strength, and applied to LC10a output synapses. This is the mushroom body's form of plasticity, and applying it here is our assumption;
   - "arousal" as an input gain. P1 neurons raise LC10a gain in courting males, but this is a female brain with no P1.
 
